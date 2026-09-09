@@ -1,0 +1,85 @@
+package com.app.organigasto.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.material3.Text
+
+import com.app.organigasto.ui.auth.WelcomeScreen
+import com.app.organigasto.ui.auth.LoginScreen
+import com.app.organigasto.ui.auth.RegisterScreen
+import com.app.organigasto.ui.home.HomeScreen
+import com.app.organigasto.ui.movimientos.AddMovementScreen
+
+import com.app.organigasto.ui.main.MainScreen
+
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.app.organigasto.OrganigastoApp
+import com.app.organigasto.ui.auth.AuthViewModel
+import com.app.organigasto.ui.movimientos.MovimientosViewModel
+import com.app.organigasto.ui.movimientos.MovimientosViewModelFactory
+
+@Composable
+fun OrganigastoNavGraph(authViewModel: AuthViewModel = viewModel()) {
+    val context = LocalContext.current
+    val database = (context.applicationContext as OrganigastoApp).database
+    val movimientosViewModel: MovimientosViewModel = viewModel(
+        factory = MovimientosViewModelFactory(
+            database.movimientoDao(),
+            database.categoriaDao()
+        )
+    )
+    
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Welcome.route
+    ) {
+        composable(Screen.Welcome.route) {
+            WelcomeScreen(
+                onLoginClick = { navController.navigate(Screen.Login.route) },
+                onRegisterClick = { navController.navigate(Screen.Register.route) }
+            )
+        }
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = { 
+                    authViewModel.login("test@test.com", "123456")
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                },
+                onRegisterClick = { navController.navigate(Screen.Register.route) },
+                onForgotPasswordClick = { /* TODO */ },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    authViewModel.register("Test User", "test@test.com", "123456")
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                },
+                onLoginClick = { navController.navigate(Screen.Login.route) },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Main.route) {
+            MainScreen(
+                onAddMovementClick = { navController.navigate(Screen.AddMovement.route) },
+                movimientosViewModel = movimientosViewModel
+            )
+        }
+        composable(Screen.AddMovement.route) {
+            AddMovementScreen(
+                onBackClick = { navController.popBackStack() },
+                viewModel = movimientosViewModel
+            )
+        }
+    }
+}
