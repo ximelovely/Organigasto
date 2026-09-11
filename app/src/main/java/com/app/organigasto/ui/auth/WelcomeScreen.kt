@@ -14,12 +14,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
+import com.app.organigasto.ui.components.AnimatedFinanceBackground
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
-
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun WelcomeScreen(
@@ -27,87 +27,91 @@ fun WelcomeScreen(
     onRegisterClick: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedFinanceBackground(modifier = Modifier.fillMaxSize())
+        
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Transparent
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(120.dp)
-                    .background(PurpuraPrimario, shape = CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Box(modifier = Modifier.size(64.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(Color.White, CircleShape)
-                            .align(Alignment.BottomEnd),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "$",
-                            color = PurpuraPrimario,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(PurpuraPrimario, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(modifier = Modifier.size(64.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.fillMaxSize()
                         )
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(Color.White, CircleShape)
+                                .align(Alignment.BottomEnd),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$",
+                                color = PurpuraPrimario,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "OrganiGasto",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
-            )
+                Text(
+                    text = "OrganiGasto",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PurpuraSecundario
+                )
 
-            Text(
-                text = "Tu dinero, bajo control",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
+                Text(
+                    text = "Tu dinero, bajo control",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
 
-            Spacer(modifier = Modifier.height(60.dp))
+                Spacer(modifier = Modifier.height(60.dp))
 
-            Button(
-                onClick = onLoginClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
-            ) {
-                Text(text = "Iniciar Sesión", fontSize = 16.sp, color = Color.White)
-            }
+                Button(
+                    onClick = onLoginClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+                ) {
+                    Text(text = "Iniciar Sesión", fontSize = 16.sp, color = Color.White)
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedButton(
-                onClick = onRegisterClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PurpuraSecundario)
-            ) {
-                Text(text = "Registrarse", fontSize = 16.sp)
+                OutlinedButton(
+                    onClick = onRegisterClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PurpuraSecundario)
+                ) {
+                    Text(text = "Registrarse", fontSize = 16.sp)
+                }
             }
         }
     }

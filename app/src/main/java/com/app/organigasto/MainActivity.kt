@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.app.organigasto.ui.navigation.OrganigastoNavGraph
@@ -17,14 +18,18 @@ import com.app.organigasto.ui.theme.OrganigastoTheme
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val preferenceManager = com.app.organigasto.data.local.PreferenceManager(this)
+        
         enableEdgeToEdge()
         setContent {
-            OrganigastoTheme {
+            var themeMode by remember { mutableIntStateOf(preferenceManager.themeMode) }
+            
+            OrganigastoTheme(themePreference = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OrganigastoNavGraph()
+                    OrganigastoNavGraph(onThemeChange = { mode -> themeMode = mode })
                 }
             }
         }

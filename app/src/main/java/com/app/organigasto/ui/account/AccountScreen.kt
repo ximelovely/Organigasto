@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
+    userEmail: String,
     onBackClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
@@ -76,7 +77,7 @@ fun AccountScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "usuario@organigasto.com",
+                    text = userEmail,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )

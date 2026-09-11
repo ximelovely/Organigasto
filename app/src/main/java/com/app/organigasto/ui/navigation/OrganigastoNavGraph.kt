@@ -33,7 +33,7 @@ import com.app.organigasto.ui.movimientos.MovimientosViewModelFactory
 import com.app.organigasto.data.local.PreferenceManager
 
 @Composable
-fun OrganigastoNavGraph() {
+fun OrganigastoNavGraph(onThemeChange: (Int) -> Unit) {
     val context = LocalContext.current
     val database = (context.applicationContext as OrganigastoApp).database
     val preferenceManager = remember { PreferenceManager(context) }
@@ -144,6 +144,7 @@ fun OrganigastoNavGraph() {
         }
         composable(Screen.Account.route) {
             AccountScreen(
+                userEmail = preferenceManager.userEmail ?: "usuario@organigasto.com",
                 onBackClick = { navController.popBackStack() },
                 onLogoutClick = {
                     authViewModel.logout()
@@ -159,7 +160,9 @@ fun OrganigastoNavGraph() {
                 onResetTutorialClick = {
                     navController.navigate(Screen.Tutorial.route)
                 },
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onThemeChange = onThemeChange,
+                preferenceManager = preferenceManager
             )
         }
     }

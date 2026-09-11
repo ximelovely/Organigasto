@@ -33,9 +33,14 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun OrganigastoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    themePreference: Int = 0, // 0: System, 1: Light, 2: Dark
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = when (themePreference) {
+        1 -> LightColorScheme
+        2 -> DarkColorScheme
+        else -> if (darkTheme) DarkColorScheme else LightColorScheme
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

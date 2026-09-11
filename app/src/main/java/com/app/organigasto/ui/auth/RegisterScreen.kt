@@ -15,13 +15,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
+import com.app.organigasto.ui.components.AnimatedFinanceBackground
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onLoginClick: () -> Unit,
     onBackClick: () -> Unit,
-    authViewModel: AuthViewModel // Añadido
+    authViewModel: AuthViewModel
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -38,147 +39,159 @@ fun RegisterScreen(
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedFinanceBackground(modifier = Modifier.fillMaxSize())
+        
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Transparent
         ) {
-            Text(
-                text = "Crea tu cuenta",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
-            )
-            Text(
-                text = "Empieza a organizar tus gastos hoy",
-                fontSize = 13.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 20.dp)
-            )
-
-            OutlinedTextField(
-                value = name,
-                onValueChange = { 
-                    name = it
-                    authViewModel.clearError()
-                    localError = null
-                },
-                label = { Text("Nombre completo") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f)
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { 
-                    email = it
-                    authViewModel.clearError()
-                    localError = null
-                },
-                label = { Text("Correo electrónico") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f)
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { 
-                    password = it
-                    authViewModel.clearError()
-                    localError = null
-                },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f)
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { 
-                    confirmPassword = it
-                    authViewModel.clearError()
-                    localError = null
-                },
-                label = { Text("Confirmar contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f)
-                )
-            )
-
-            val displayError = authError ?: localError
-            if (displayError != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(text = displayError, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
-            }
-
-            if (successMessage != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(text = successMessage!!, color = Color(0xFF4CAF50), fontSize = 13.sp)
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = {
-                    successMessage = null
-                    if (name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                        localError = "Todos los campos son obligatorios"
-                    } else if (!email.contains("@") || !email.contains(".")) {
-                        localError = "El correo electrónico no es válido"
-                    } else if (password != confirmPassword) {
-                        localError = "Las contraseñas no coinciden"
-                    } else {
-                        localError = null
-                        authViewModel.register(name, email, password)
-                    }
-                },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(text = "Registrarse", fontSize = 16.sp, color = Color.White)
-            }
+                Text(
+                    text = "Crea tu cuenta",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PurpuraSecundario
+                )
+                Text(
+                    text = "Empieza a organizar tus gastos hoy",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 20.dp)
+                )
 
-            Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { 
+                        name = it
+                        authViewModel.clearError()
+                        localError = null
+                    },
+                    label = { Text("Nombre completo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PurpuraPrimario,
+                        unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
 
-            TextButton(onClick = onLoginClick) {
-                Text(text = "¿Ya tienes cuenta? Inicia sesión", color = PurpuraSecundario)
-            }
+                Spacer(modifier = Modifier.height(12.dp))
 
-            TextButton(onClick = onBackClick) {
-                Text(text = "Volver", color = Color.Gray)
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { 
+                        email = it
+                        authViewModel.clearError()
+                        localError = null
+                    },
+                    label = { Text("Correo electrónico") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PurpuraPrimario,
+                        unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { 
+                        password = it
+                        authViewModel.clearError()
+                        localError = null
+                    },
+                    label = { Text("Contraseña") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PurpuraPrimario,
+                        unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { 
+                        confirmPassword = it
+                        authViewModel.clearError()
+                        localError = null
+                    },
+                    label = { Text("Confirmar contraseña") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PurpuraPrimario,
+                        unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                val displayError = authError ?: localError
+                if (displayError != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(text = displayError, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+
+                if (successMessage != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(text = successMessage!!, color = Color(0xFF4CAF50), fontSize = 13.sp)
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = {
+                        successMessage = null
+                        if (name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+                            localError = "Todos los campos son obligatorios"
+                        } else if (!email.contains("@") || !email.contains(".")) {
+                            localError = "El correo electrónico no es válido"
+                        } else if (password != confirmPassword) {
+                            localError = "Las contraseñas no coinciden"
+                        } else {
+                            localError = null
+                            authViewModel.register(name, email, password)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+                ) {
+                    Text(text = "Registrarse", fontSize = 16.sp, color = Color.White)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                TextButton(onClick = onLoginClick) {
+                    Text(text = "¿Ya tienes cuenta? Inicia sesión", color = PurpuraSecundario)
+                }
+
+                TextButton(onClick = onBackClick) {
+                    Text(text = "Volver", color = Color.Gray)
+                }
             }
         }
     }

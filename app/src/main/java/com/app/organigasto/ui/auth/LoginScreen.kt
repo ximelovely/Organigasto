@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.app.organigasto.MainActivity
 import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
-
+import com.app.organigasto.ui.components.AnimatedFinanceBackground
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
@@ -58,155 +58,159 @@ fun LoginScreen(
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedFinanceBackground(modifier = Modifier.fillMaxSize())
+        
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Transparent
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(100.dp)
-                    .background(PurpuraPrimario, shape = CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Box(modifier = Modifier.size(54.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .background(Color.White, CircleShape)
-                            .align(Alignment.BottomEnd),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "$",
-                            color = PurpuraPrimario,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Bienvenido de nuevo",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
-            )
-            Text(
-                text = "Inicia sesión para seguir organizando tus gastos",
-                fontSize = 13.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { 
-                    email = it
-                    authViewModel.clearError() 
-                },
-                label = { Text("Correo electrónico") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { 
-                    password = it
-                    authViewModel.clearError()
-                },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-
-            if (authError != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = authError!!,
-                    color = MaterialTheme.colorScheme.error,
-                    fontSize = 13.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = { authViewModel.login(email, password) },
+                Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(25.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+                        .size(100.dp)
+                        .background(PurpuraPrimario, shape = CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "Iniciar Sesión", fontSize = 16.sp, color = Color.White)
-                }
-                
-                if (isBiometricEnabled && hasLoggedInOnce) {
-                    Spacer(modifier = Modifier.width(16.dp))
-                    IconButton(
-                        onClick = {
-                            (context as? MainActivity)?.showBiometricPrompt {
-                                onLoginSuccess()
-                            }
-                        },
-                        modifier = Modifier
-                            .size(50.dp)
-                            .background(PurpuraPrimario.copy(alpha = 0.1f), CircleShape)
-                    ) {
+                    Box(modifier = Modifier.size(54.dp)) {
                         Icon(
-                            Icons.Default.Fingerprint, 
-                            contentDescription = "Biometría",
-                            tint = PurpuraPrimario
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.fillMaxSize()
                         )
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(Color.White, CircleShape)
+                                .align(Alignment.BottomEnd),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$",
+                                color = PurpuraPrimario,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            TextButton(onClick = onRegisterClick) {
-                Text(text = "¿No tienes cuenta? Regístrate", color = PurpuraSecundario)
-            }
+                Text(
+                    text = "Bienvenido de nuevo",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PurpuraSecundario
+                )
+                Text(
+                    text = "Inicia sesión para seguir organizando tus gastos",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
 
-            TextButton(onClick = onBackClick) {
-                Text(text = "Volver", color = Color.Gray)
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { 
+                        email = it
+                        authViewModel.clearError() 
+                    },
+                    label = { Text("Correo electrónico") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PurpuraPrimario,
+                        unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { 
+                        password = it
+                        authViewModel.clearError()
+                    },
+                    label = { Text("Contraseña") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PurpuraPrimario,
+                        unfocusedBorderColor = PurpuraPrimario.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                if (authError != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = authError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { authViewModel.login(email, password) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(25.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+                    ) {
+                        Text(text = "Iniciar Sesión", fontSize = 16.sp, color = Color.White)
+                    }
+                    
+                    if (isBiometricEnabled && hasLoggedInOnce) {
+                        Spacer(modifier = Modifier.width(16.dp))
+                        IconButton(
+                            onClick = {
+                                (context as? MainActivity)?.showBiometricPrompt {
+                                    onLoginSuccess()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(50.dp)
+                                .background(PurpuraPrimario.copy(alpha = 0.1f), CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Fingerprint, 
+                                contentDescription = "Biometría",
+                                tint = PurpuraPrimario
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextButton(onClick = onRegisterClick) {
+                    Text(text = "¿No tienes cuenta? Regístrate", color = PurpuraSecundario)
+                }
+
+                TextButton(onClick = onBackClick) {
+                    Text(text = "Volver", color = Color.Gray)
+                }
             }
         }
     }
