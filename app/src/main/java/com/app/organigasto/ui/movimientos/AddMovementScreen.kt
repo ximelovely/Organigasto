@@ -162,18 +162,20 @@ fun AddMovementScreen(
                         label = "Seleccionar cuenta destino"
                     )
                 } else {
-                    Text(
-                        "Categoria",
-                        modifier = Modifier.fillMaxWidth(),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    CategoryGrid(
-                        categorias = categorias,
-                        tipo = selectedType,
-                        selectedId = selectedCategoryId,
-                        onSelected = { selectedCategoryId = it }
-                    )
+                    val filteredCategories = categorias.filter { it.tipo == null || it.tipo == selectedType }
+                    if (filteredCategories.isNotEmpty()) {
+                        Text(
+                            "Categoria",
+                            modifier = Modifier.fillMaxWidth(),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        CategoryGrid(
+                            categorias = filteredCategories,
+                            selectedId = selectedCategoryId,
+                            onSelected = { selectedCategoryId = it }
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -373,22 +375,12 @@ fun TypeSegmentedControl(selected: TipoMovimiento, onSelected: (TipoMovimiento) 
 }
 
 @Composable
-fun CategoryGrid(categorias: List<CategoriaEntity>, tipo: TipoMovimiento, selectedId: Long?, onSelected: (Long) -> Unit) {
-    val items = if (tipo == TipoMovimiento.INGRESO) {
-        listOf(
-            CategoriaEntity(id = -1, nombre = "Sueldo", icono = "payments", colorHex = "#4CAF50"),
-            CategoriaEntity(id = -2, nombre = "Venta", icono = "shopping_bag", colorHex = "#2196F3"),
-            CategoriaEntity(id = -3, nombre = "Regalo", icono = "redeem", colorHex = "#FF9800")
-        )
-    } else {
-        categorias.take(3)
-    }
-
+fun CategoryGrid(categorias: List<CategoriaEntity>, selectedId: Long?, onSelected: (Long) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items.forEach { cat ->
+        categorias.take(3).forEach { cat ->
             val icon = when (cat.icono) {
                 "restaurant" -> Icons.Default.Restaurant
                 "directions_car" -> Icons.Default.DirectionsCar

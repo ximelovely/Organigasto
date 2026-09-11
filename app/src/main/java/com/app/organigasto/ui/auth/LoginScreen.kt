@@ -21,6 +21,9 @@ import com.app.organigasto.MainActivity
 import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -37,6 +40,8 @@ fun LoginScreen(
     val context = LocalContext.current
     val isBiometricEnabled = authViewModel.isBiometricEnabled
     val hasLoggedInOnce = authViewModel.hasLoggedInOnce
+
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
@@ -60,7 +65,8 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

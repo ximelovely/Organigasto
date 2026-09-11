@@ -13,7 +13,8 @@ import java.time.LocalDate
         ForeignKey(
             entity = CategoriaEntity::class,
             parentColumns = ["id"],
-            childColumns = ["categoriaId"]
+            childColumns = ["categoriaId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ]
 )
@@ -22,7 +23,7 @@ data class MovimientoEntity(
     val id: Long = 0,
     val tipo: TipoMovimiento,
     val monto: Double,
-    val categoriaId: Long,
+    val categoriaId: Long? = null,
     val cuenta: String,
     val fecha: LocalDate,
     val recurrencia: Recurrencia = Recurrencia.INDIVIDUAL,

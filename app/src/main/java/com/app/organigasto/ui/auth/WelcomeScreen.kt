@@ -18,11 +18,15 @@ import com.app.organigasto.ui.theme.PurpuraSecundario
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @Composable
 fun WelcomeScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -30,7 +34,8 @@ fun WelcomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

@@ -128,7 +128,7 @@ class MovimientosViewModel(
     fun agregarMovimiento(
         tipo: TipoMovimiento,
         monto: Double,
-        categoriaId: Long,
+        categoriaId: Long?,
         cuentaId: Long,
         cuentaNombre: String,
         fecha: LocalDate,
@@ -173,7 +173,7 @@ class MovimientosViewModel(
             val salida = MovimientoEntity(
                 tipo = TipoMovimiento.TRANSFERENCIA,
                 monto = monto,
-                categoriaId = 1, // ID generico o "Transferencia"
+                categoriaId = null, // Las transferencias no necesitan categoría
                 cuenta = cuentaOrigenNombre,
                 fecha = fecha,
                 nota = "Transferencia a $cuentaDestinoNombre${if (nota != null) ": $nota" else ""}"
@@ -185,7 +185,7 @@ class MovimientosViewModel(
             val entrada = MovimientoEntity(
                 tipo = TipoMovimiento.TRANSFERENCIA,
                 monto = monto,
-                categoriaId = 1,
+                categoriaId = null,
                 cuenta = cuentaDestinoNombre,
                 fecha = fecha,
                 nota = "Transferencia desde $cuentaOrigenNombre${if (nota != null) ": $nota" else ""}"
