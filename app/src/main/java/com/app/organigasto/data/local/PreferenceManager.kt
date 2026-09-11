@@ -18,6 +18,10 @@ class PreferenceManager(context: Context) {
         get() = prefs.getString("user_email", null)
         set(value) = prefs.edit().putString("user_email", value).apply()
 
+    var userName: String?
+        get() = prefs.getString("user_name", null)
+        set(value) = prefs.edit().putString("user_name", value).apply()
+
     var themeMode: Int // 0: System, 1: Light, 2: Dark
         get() = prefs.getInt("theme_mode", 0)
         set(value) = prefs.edit().putInt("theme_mode", value).apply()

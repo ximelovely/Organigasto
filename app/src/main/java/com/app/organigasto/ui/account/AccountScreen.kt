@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
+    userName: String,
     userEmail: String,
     onBackClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -71,7 +72,7 @@ fun AccountScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "Usuario de OrganiGasto",
+                    text = userName,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

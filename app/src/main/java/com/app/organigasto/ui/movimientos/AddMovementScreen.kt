@@ -99,41 +99,42 @@ fun AddMovementScreen(
                     onSelected = { selectedCurrency = it }
                 )
 
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { 
-                        if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) amount = it 
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { 
-                        if (amount.isEmpty()) {
-                            Text(
-                                "0.00", 
-                                fontSize = 54.sp, 
-                                fontWeight = FontWeight.Black, 
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            ) 
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = amount,
+                        onValueChange = { 
+                            if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) amount = it 
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 64.sp, 
+                            fontWeight = FontWeight.Black, 
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                        decorationBox = { innerTextField ->
+                            Box(contentAlignment = Alignment.Center) {
+                                if (amount.isEmpty()) {
+                                    Text(
+                                        "0.00", 
+                                        fontSize = 64.sp, 
+                                        fontWeight = FontWeight.Black, 
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    ) 
+                                }
+                                innerTextField()
+                            }
                         }
-                    },
-                    textStyle = LocalTextStyle.current.copy(
-                        fontSize = 54.sp, 
-                        fontWeight = FontWeight.Black, 
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
                     )
-                )
+                }
 
                 if (selectedCurrency != "MXN") {
                     Text(
@@ -450,18 +451,30 @@ fun AccountSelector(
                             )
                         ) {
                             Row(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text(c.nombre, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                    Text(c.tipo, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = c.nombre, 
+                                        fontWeight = FontWeight.Bold, 
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = c.tipo, 
+                                        fontSize = 11.sp, 
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
                                 }
                                 Text(
-                                    "$${String.format("%.2f", c.saldoActual)}", 
+                                    text = "$${String.format("%.2f", c.saldoActual)}", 
                                     fontWeight = FontWeight.Black, 
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 16.sp
                                 )
                             }
                         }

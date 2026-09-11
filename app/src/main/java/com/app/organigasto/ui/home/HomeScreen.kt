@@ -11,9 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -94,10 +92,19 @@ fun HomeScreen(
                 }
             }
 
-            // Gastos recurrentes
-            if (movimientosRecurrentes.isNotEmpty()) {
+            // Ingresos recurrentes
+            val ingresosRecurrentes = movimientosRecurrentes.filter { it.tipo == TipoMovimiento.INGRESO }
+            if (ingresosRecurrentes.isNotEmpty()) {
                 item {
-                    RecurrentExpensesSection(movimientosRecurrentes)
+                    RecurrentMovementsSection("Ingresos Programados", ingresosRecurrentes)
+                }
+            }
+
+            // Gastos recurrentes
+            val gastosRecurrentes = movimientosRecurrentes.filter { it.tipo == TipoMovimiento.GASTO }
+            if (gastosRecurrentes.isNotEmpty()) {
+                item {
+                    RecurrentMovementsSection("Gastos Programados", gastosRecurrentes)
                 }
             }
 
@@ -106,7 +113,8 @@ fun HomeScreen(
                 item {
                     SavingsGoalSection(
                         metas = metasAhorro,
-                        onAbonar = { id, monto -> viewModel.abonarAMeta(id, monto) }
+                        onAbonar = { id, monto -> viewModel.abonarAMeta(id, monto) },
+                        onEditMeta = { id, monto -> viewModel.actualizarMeta(id, monto) }
                     )
                 }
             }
@@ -420,7 +428,7 @@ fun BudgetBar(label: String, current: Float, total: Float) {
 }
 
 @Composable
-fun RecurrentExpensesSection(movimientos: List<MovimientoEntity>) {
+fun RecurrentMovementsSection(title: String, movimientos: List<MovimientoEntity>) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -428,7 +436,7 @@ fun RecurrentExpensesSection(movimientos: List<MovimientoEntity>) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Gastos recurrentes",
+                title,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -440,11 +448,18 @@ fun RecurrentExpensesSection(movimientos: List<MovimientoEntity>) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(movimientos.size) { index ->
                 val mov = movimientos[index]
+                val proximaFecha = when (mov.recurrencia) {
+                    com.app.organigasto.domain.model.Recurrencia.SEMANAL -> mov.fecha.plusWeeks(1)
+                    com.app.organigasto.domain.model.Recurrencia.QUINCENAL -> mov.fecha.plusWeeks(2)
+                    com.app.organigasto.domain.model.Recurrencia.MENSUAL -> mov.fecha.plusMonths(1)
+                    else -> mov.fecha
+                }
+
                 RecurrentItemCard(
-                    title = mov.nota ?: "Gasto fijo",
+                    title = mov.nota ?: "Programado",
                     amount = "$${mov.monto}",
-                    date = mov.recurrencia.name.lowercase().replaceFirstChar { it.uppercase() },
-                    icon = Icons.Default.Repeat
+                    date = "Próximo: $proximaFecha",
+                    icon = if (mov.tipo == TipoMovimiento.INGRESO) Icons.Default.TrendingUp else Icons.Default.Repeat
                 )
             }
         }
@@ -478,7 +493,8 @@ fun RecurrentItemCard(title: String, amount: String, date: String, icon: ImageVe
 @Composable
 fun SavingsGoalSection(
     metas: List<com.app.organigasto.data.local.entity.MetaAhorroEntity>,
-    onAbonar: (Long, Double) -> Unit // Añadido
+    onAbonar: (Long, Double) -> Unit,
+    onEditMeta: (Long, Double) -> Unit
 ) {
     Column {
         Text(
@@ -489,7 +505,7 @@ fun SavingsGoalSection(
         )
         Spacer(modifier = Modifier.height(16.dp))
         metas.forEach { meta ->
-            SavingsGoalItem(meta, onAbonar)
+            SavingsGoalItem(meta, onAbonar, onEditMeta)
         }
     }
 }
@@ -497,10 +513,14 @@ fun SavingsGoalSection(
 @Composable
 fun SavingsGoalItem(
     meta: com.app.organigasto.data.local.entity.MetaAhorroEntity,
-    onAbonar: (Long, Double) -> Unit
+    onAbonar: (Long, Double) -> Unit,
+    onEditMeta: (Long, Double) -> Unit
 ) {
+    var showAbonarDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).clickable { showEditDialog = true },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -523,11 +543,13 @@ fun SavingsGoalItem(
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(meta.nombre, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
                 }
-                IconButton(
-                    onClick = { onAbonar(meta.id, 50.0) },
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Abonar $50", tint = MaterialTheme.colorScheme.primary)
+                Row {
+                    IconButton(
+                        onClick = { showAbonarDialog = true },
+                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Ajustar monto", tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -536,13 +558,13 @@ fun SavingsGoalItem(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$${meta.montoActual} de $${meta.montoObjetivo}",
+                    text = "$${String.format("%.2f", meta.montoActual)} de $${String.format("%.2f", meta.montoObjetivo)}",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${(meta.montoActual / meta.montoObjetivo * 100).toInt()}%",
+                    text = "${if (meta.montoObjetivo > 0) (meta.montoActual / meta.montoObjetivo * 100).toInt() else 0}%",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF4CAF50)
@@ -550,12 +572,65 @@ fun SavingsGoalItem(
             }
             Spacer(modifier = Modifier.height(10.dp))
             LinearProgressIndicator(
-                progress = { (meta.montoActual / meta.montoObjetivo).toFloat().coerceIn(0f, 1f) },
+                progress = { (if (meta.montoObjetivo > 0) meta.montoActual / meta.montoObjetivo else 0.0).toFloat().coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(10.dp),
                 color = Color(0xFF4CAF50),
                 trackColor = Color(0xFF4CAF50).copy(alpha = 0.1f),
                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
         }
+    }
+
+    if (showAbonarDialog) {
+        var montoInput by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showAbonarDialog = false },
+            title = { Text("Ajustar ahorro", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Ingresa el monto (positivo para añadir, negativo para retirar)", fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = montoInput,
+                        onValueChange = { montoInput = it },
+                        placeholder = { Text("0.00") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    montoInput.toDoubleOrNull()?.let { onAbonar(meta.id, it) }
+                    showAbonarDialog = false
+                }) { Text("Aplicar") }
+            },
+            dismissButton = { TextButton(onClick = { showAbonarDialog = false }) { Text("Cancelar") } }
+        )
+    }
+
+    if (showEditDialog) {
+        var objetivoInput by remember { mutableStateOf(meta.montoObjetivo.toString()) }
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Editar meta de ahorro", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Nuevo objetivo de ahorro:", fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = objetivoInput,
+                        onValueChange = { objetivoInput = it },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    objetivoInput.toDoubleOrNull()?.let { onEditMeta(meta.id, it) }
+                    showEditDialog = false
+                }) { Text("Guardar") }
+            },
+            dismissButton = { TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") } }
+        )
     }
 }

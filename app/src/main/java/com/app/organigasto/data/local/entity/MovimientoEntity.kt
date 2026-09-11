@@ -24,6 +24,7 @@ data class MovimientoEntity(
     val tipo: TipoMovimiento,
     val monto: Double,
     val categoriaId: Long? = null,
+    val cuentaId: Long = 0, // Añadido para actualizaciones automáticas
     val cuenta: String,
     val fecha: LocalDate,
     val recurrencia: Recurrencia = Recurrencia.INDIVIDUAL,

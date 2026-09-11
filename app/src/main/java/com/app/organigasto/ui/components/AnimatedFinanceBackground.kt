@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
+import kotlin.random.Random
 
 @Composable
 fun AnimatedFinanceBackground(modifier: Modifier = Modifier) {
@@ -20,52 +21,72 @@ fun AnimatedFinanceBackground(modifier: Modifier = Modifier) {
         Icons.Default.AccountBalance,
         Icons.Default.Savings,
         Icons.Default.TrendingUp,
-        Icons.Default.ReceiptLong
+        Icons.Default.ReceiptLong,
+        Icons.Default.Wallet,
+        Icons.Default.MonetizationOn,
+        Icons.Default.AttachMoney,
+        Icons.Default.ShoppingBag,
+        Icons.Default.Calculate,
+        Icons.Default.Store
     )
 
     val painters = icons.map { rememberVectorPainter(it) }
     val primaryColor = MaterialTheme.colorScheme.primary
-    val infiniteTransition = rememberInfiniteTransition(label = "background")
+    val infiniteTransition = rememberInfiniteTransition(label = "finance_bg")
 
-    // Animación suave de flotación y rotación
-    val phase by infiniteTransition.animateFloat(
+    // Generar datos aleatorios para 15 iconos flotantes
+    val iconData = remember {
+        List(15) {
+            FloatingIconData(
+                painterIndex = Random.nextInt(painters.size),
+                startX = Random.nextFloat(),
+                speed = 0.0001f + Random.nextFloat() * 0.0002f,
+                scale = 0.5f + Random.nextFloat() * 0.8f,
+                rotationSpeed = (Random.nextFloat() - 0.5f) * 0.5f
+            )
+        }
+    }
+
+    val progress by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 2 * Math.PI.toFloat(),
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(10000, easing = LinearEasing),
+            animation = tween(20000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "phase"
+        label = "loop"
     )
 
     Canvas(modifier = modifier.fillMaxSize()) {
-        val iconSize = 40.dp.toPx()
-        val spacing = 120.dp.toPx()
-        val columns = (size.width / spacing).toInt() + 1
-        val rows = (size.height / spacing).toInt() + 1
-
-        for (i in 0 until columns) {
-            for (j in 0 until rows) {
-                val index = (i * rows + j) % painters.size
-                val painter = painters[index]
-                
-                // Variación de movimiento por posición
-                val offsetX = Math.sin((phase + i * 0.5).toDouble()).toFloat() * 20f
-                val offsetY = Math.cos((phase + j * 0.5).toDouble()).toFloat() * 20f
-                
-                val x = i * spacing + (if (j % 2 == 0) spacing / 2 else 0f)
-                val y = j * spacing
-
-                translate(left = x + offsetX, top = y + offsetY) {
-                    with(painter) {
-                        draw(
-                            size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
-                            alpha = 0.05f, // Muy sutil para no distraer
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(primaryColor)
-                        )
-                    }
+        val iconSizeBase = 40.dp.toPx()
+        
+        iconData.forEach { data ->
+            val painter = painters[data.painterIndex]
+            val iconSize = iconSizeBase * data.scale
+            
+            // Calcular posición vertical: empieza abajo y sube
+            // El residuo hace que vuelva a empezar abajo al terminar
+            val yProgress = (progress * (1f / data.speed)) % 1f
+            val yPos = size.height * (1f - yProgress)
+            val xPos = size.width * data.startX
+            
+            translate(left = xPos, top = yPos) {
+                with(painter) {
+                    draw(
+                        size = androidx.compose.ui.geometry.Size(iconSize, iconSize),
+                        alpha = 0.08f,
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(primaryColor)
+                    )
                 }
             }
         }
     }
 }
+
+private data class FloatingIconData(
+    val painterIndex: Int,
+    val startX: Float,
+    val speed: Float,
+    val scale: Float,
+    val rotationSpeed: Float
+)

@@ -33,6 +33,7 @@ class AuthViewModel(
                 _authError.value = null
                 preferenceManager.hasLoggedInOnce = true
                 preferenceManager.userEmail = email
+                preferenceManager.userName = user.name
             } else {
                 _authError.value = "Correo o contraseña incorrectos"
             }
@@ -57,6 +58,9 @@ class AuthViewModel(
                 userDao.insert(newUser)
                 _isLoggedIn.value = true
                 _authError.value = null
+                preferenceManager.hasLoggedInOnce = true
+                preferenceManager.userEmail = email
+                preferenceManager.userName = name
             }
         }
     }

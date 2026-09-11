@@ -144,6 +144,7 @@ fun OrganigastoNavGraph(onThemeChange: (Int) -> Unit) {
         }
         composable(Screen.Account.route) {
             AccountScreen(
+                userName = preferenceManager.userName ?: "Usuario de OrganiGasto",
                 userEmail = preferenceManager.userEmail ?: "usuario@organigasto.com",
                 onBackClick = { navController.popBackStack() },
                 onLogoutClick = {

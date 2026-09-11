@@ -143,6 +143,7 @@ class MovimientosViewModel(
                 tipo = tipo,
                 monto = monto,
                 categoriaId = categoriaId,
+                cuentaId = cuentaId,
                 cuenta = cuentaNombre,
                 fecha = fecha,
                 recurrencia = recurrencia,
@@ -173,7 +174,8 @@ class MovimientosViewModel(
             val salida = MovimientoEntity(
                 tipo = TipoMovimiento.TRANSFERENCIA,
                 monto = monto,
-                categoriaId = null, // Las transferencias no necesitan categoría
+                categoriaId = null,
+                cuentaId = cuentaOrigenId,
                 cuenta = cuentaOrigenNombre,
                 fecha = fecha,
                 nota = "Transferencia a $cuentaDestinoNombre${if (nota != null) ": $nota" else ""}"
@@ -186,6 +188,7 @@ class MovimientosViewModel(
                 tipo = TipoMovimiento.TRANSFERENCIA,
                 monto = monto,
                 categoriaId = null,
+                cuentaId = cuentaDestinoId,
                 cuenta = cuentaDestinoNombre,
                 fecha = fecha,
                 nota = "Transferencia desde $cuentaOrigenNombre${if (nota != null) ": $nota" else ""}"
@@ -237,6 +240,15 @@ class MovimientosViewModel(
     fun abonarAMeta(metaId: Long, monto: Double) {
         viewModelScope.launch {
             metaAhorroDao.abonarAMeta(metaId, monto)
+        }
+    }
+
+    fun actualizarMeta(id: Long, montoObjetivo: Double) {
+        viewModelScope.launch {
+            val meta = metasAhorro.value.find { it.id == id }
+            if (meta != null) {
+                metaAhorroDao.actualizar(meta.copy(montoObjetivo = montoObjetivo))
+            }
         }
     }
 
