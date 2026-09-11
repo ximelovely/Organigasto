@@ -19,6 +19,8 @@ import androidx.navigation.compose.rememberNavController
 import com.app.organigasto.ui.home.HomeScreen
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
 import com.app.organigasto.ui.stats.StatsScreen
+import com.app.organigasto.ui.suscripciones.SuscripcionesScreen
+import com.app.organigasto.ui.deudas.DeudasScreen
 import com.app.organigasto.ui.navigation.Screen
 import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
@@ -26,6 +28,7 @@ import com.app.organigasto.ui.theme.PurpuraSecundario
 @Composable
 fun MainScreen(
     onAddMovementClick: () -> Unit,
+    onBudgetEditClick: () -> Unit, // Añadido
     movimientosViewModel: MovimientosViewModel
 ) {
     val navController = rememberNavController()
@@ -43,6 +46,7 @@ fun MainScreen(
             composable(Screen.Main.Home.route) {
                 HomeScreen(
                     onAddMovementClick = onAddMovementClick,
+                    onBudgetEditClick = onBudgetEditClick, // Pasado
                     viewModel = movimientosViewModel
                 )
             }
@@ -50,10 +54,10 @@ fun MainScreen(
                 StatsScreen(viewModel = movimientosViewModel)
             }
             composable(Screen.Main.Subscriptions.route) {
-                Text("Suscripciones Screen")
+                SuscripcionesScreen(viewModel = movimientosViewModel)
             }
             composable(Screen.Main.Loans.route) {
-                Text("Créditos Screen")
+                DeudasScreen(viewModel = movimientosViewModel)
             }
         }
     }

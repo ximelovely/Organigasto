@@ -23,8 +23,9 @@ data class MovimientoEntity(
     val tipo: TipoMovimiento,
     val monto: Double,
     val categoriaId: Long,
-    val cuenta: String,              // "Tarjeta debito BBVA", por ejemplo
+    val cuenta: String,
     val fecha: LocalDate,
     val recurrencia: Recurrencia = Recurrencia.INDIVIDUAL,
-    val nota: String? = null
+    val nota: String? = null,
+    val imagenReciboPath: String? = null
 )

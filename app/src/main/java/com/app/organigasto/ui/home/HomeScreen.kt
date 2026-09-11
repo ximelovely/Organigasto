@@ -1,17 +1,22 @@
 package com.app.organigasto.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -21,24 +26,25 @@ import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
 import com.app.organigasto.ui.theme.Black
 import com.app.organigasto.ui.theme.GrayText
-
 import com.app.organigasto.ui.theme.CremaFondo
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
 import com.app.organigasto.data.local.entity.MovimientoEntity
 import com.app.organigasto.domain.model.TipoMovimiento
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 
 @Composable
 fun HomeScreen(
     onAddMovementClick: () -> Unit,
+    onBudgetEditClick: () -> Unit, // Añadido
     viewModel: MovimientosViewModel
 ) {
     val movimientos by viewModel.movimientosFiltrados.collectAsState()
     val balance by viewModel.balanceTotal.collectAsState()
     val filtro by viewModel.filtroTiempo.collectAsState()
+    val query by viewModel.busqueda.collectAsState()
     val gastosPorCategoria by viewModel.gastosPorCategoria.collectAsState()
     val movimientosRecurrentes by viewModel.movimientosRecurrentes.collectAsState()
+    val cuentas by viewModel.cuentas.collectAsState()
+    val metasAhorro by viewModel.metasAhorro.collectAsState() // Añadido
 
     Scaffold(
         topBar = { HomeTopBar() },
@@ -63,16 +69,26 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            item {
+                CustomSearchBar(query) { viewModel.buscar(it) }
+            }
             
             // Header Card
             item {
-                HeaderBalanceCard(balance, filtro)
+                val totalCuentas = cuentas.sumOf { it.saldoActual }
+                HeaderBalanceCard(totalCuentas, filtro)
+            }
+
+            // Cuentas Section
+            item {
+                AccountsSection(cuentas)
             }
 
             // Presupuesto por categoria
             if (gastosPorCategoria.isNotEmpty()) {
                 item {
-                    BudgetSection(gastosPorCategoria)
+                    BudgetSection(gastosPorCategoria, onBudgetEditClick)
                 }
             }
 
@@ -84,8 +100,13 @@ fun HomeScreen(
             }
 
             // Meta de ahorro
-            item {
-                SavingsGoalCard()
+            if (metasAhorro.isNotEmpty()) {
+                item {
+                    SavingsGoalSection(
+                        metas = metasAhorro,
+                        onAbonar = { id, monto -> viewModel.abonarAMeta(id, monto) }
+                    )
+                }
             }
 
             // Lista de movimientos recientes
@@ -156,6 +177,88 @@ fun MovementItem(movimiento: MovimientoEntity, onDelete: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun AccountsSection(cuentas: List<com.app.organigasto.data.local.entity.CuentaEntity>) {
+    Column {
+        Text(
+            "Mis Cuentas",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = PurpuraSecundario
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(cuentas.size) { index ->
+                val cuenta = cuentas[index]
+                AccountCard(cuenta)
+            }
+        }
+    }
+}
+
+@Composable
+fun AccountCard(cuenta: com.app.organigasto.data.local.entity.CuentaEntity) {
+    val cardColor = if (cuenta.tipo == "Debito") PurpuraSecundario else PurpuraPrimario
+    Card(
+        modifier = Modifier.width(180.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (cuenta.tipo == "Efectivo") Icons.Default.Payments else Icons.Default.CreditCard,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = cuenta.tipo,
+                    fontSize = 10.sp,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "$${String.format("%.2f", cuenta.saldoActual)}",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+            Text(
+                text = cuenta.nombre,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+    @Composable
+fun CustomSearchBar(query: String, onQueryChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("Buscar movimientos...", color = GrayText) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = PurpuraSecundario) },
+        trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, contentDescription = null) } },
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = PurpuraPrimario,
+            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White
+        ),
+        singleLine = true
+    )
+}
+    @OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun HomeTopBar() {
     CenterAlignedTopAppBar(
         title = {
@@ -189,39 +292,73 @@ fun HeaderBalanceCard(balance: Double, filtro: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = PurpuraSecundario)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(PurpuraSecundario, Color(0xFF2D244F))
+                    )
+                )
+                .padding(24.dp)
         ) {
-            Text(
-                "DISPONIBLE PARA GASTAR ESTE ${filtro.uppercase()}",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "$${String.format("%.2f", balance)}",
-                color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Black
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "BALANCE TOTAL ${filtro.uppercase()}",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "$${String.format("%.2f", balance)}",
+                    color = Color.White,
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "Gastos bajo control ✨",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun BudgetSection(gastos: List<com.app.organigasto.ui.movimientos.GastoCategoria>) {
+fun BudgetSection(
+    gastos: List<com.app.organigasto.ui.movimientos.GastoCategoria>,
+    onEditClick: () -> Unit // Añadido
+) {
     Column {
-        Text(
-            "Tu presupuesto por categoria",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = PurpuraSecundario
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Tu presupuesto por categoria",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = PurpuraSecundario
+            )
+            IconButton(onClick = onEditClick) {
+                Icon(Icons.Default.Edit, contentDescription = "Editar presupuestos", tint = PurpuraPrimario)
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         gastos.forEach { gasto ->
             BudgetBar(gasto.nombre, gasto.gastado.toFloat(), gasto.presupuesto.toFloat())
@@ -231,6 +368,13 @@ fun BudgetSection(gastos: List<com.app.organigasto.ui.movimientos.GastoCategoria
 
 @Composable
 fun BudgetBar(label: String, current: Float, total: Float) {
+    val progress = if (total > 0) current / total else 0f
+    val barColor = when {
+        progress >= 1.0f -> Color(0xFFF44336) // Rojo al 100%
+        progress >= 0.8f -> Color(0xFFFF9800) // Naranja al 80%
+        else -> PurpuraPrimario
+    }
+
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -241,14 +385,23 @@ fun BudgetBar(label: String, current: Float, total: Float) {
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
-            progress = { current / total },
+            progress = { progress.coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp),
-            color = PurpuraPrimario,
-            trackColor = PurpuraPrimario.copy(alpha = 0.1f),
+            color = barColor,
+            trackColor = barColor.copy(alpha = 0.1f),
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
         )
+        if (progress >= 0.8f) {
+            Text(
+                text = if (progress >= 1.0f) "¡Presupuesto agotado!" else "Cerca del límite (80%)",
+                color = barColor,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
     }
 }
 
@@ -309,33 +462,82 @@ fun RecurrentItemCard(title: String, amount: String, date: String, icon: ImageVe
 }
 
 @Composable
-fun SavingsGoalCard() {
+fun SavingsGoalSection(
+    metas: List<com.app.organigasto.data.local.entity.MetaAhorroEntity>,
+    onAbonar: (Long, Double) -> Unit // Añadido
+) {
+    Column {
+        Text(
+            "Metas de ahorro",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = PurpuraSecundario
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        metas.forEach { meta ->
+            SavingsGoalItem(meta, onAbonar)
+        }
+    }
+}
+
+@Composable
+fun SavingsGoalItem(
+    meta: com.app.organigasto.data.local.entity.MetaAhorroEntity,
+    onAbonar: (Long, Double) -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color(0xFFE8F5E9), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Savings, contentDescription = null, tint = Color(0xFF4CAF50))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(meta.nombre, fontWeight = FontWeight.Bold, color = PurpuraSecundario, fontSize = 16.sp)
+                }
+                IconButton(
+                    onClick = { onAbonar(meta.id, 50.0) },
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = PurpuraPrimario.copy(alpha = 0.1f))
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Abonar $50", tint = PurpuraPrimario)
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Meta de ahorro", fontWeight = FontWeight.Bold, color = PurpuraSecundario)
-                Text("Vacaciones", color = GrayText)
+                Text(
+                    text = "$${meta.montoActual} de $${meta.montoObjetivo}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PurpuraSecundario
+                )
+                Text(
+                    text = "${(meta.montoActual / meta.montoObjetivo * 100).toInt()}%",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4CAF50)
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text("$2,100 ahorrados", fontSize = 12.sp, color = PurpuraSecundario)
-                Text("Meta: $5,000 - 15 Dic", fontSize = 10.sp, color = GrayText)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             LinearProgressIndicator(
-                progress = { 2100f / 5000f },
-                modifier = Modifier.fillMaxWidth().height(8.dp),
+                progress = { (meta.montoActual / meta.montoObjetivo).toFloat().coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth().height(10.dp),
                 color = Color(0xFF4CAF50),
                 trackColor = Color(0xFF4CAF50).copy(alpha = 0.1f),
                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round

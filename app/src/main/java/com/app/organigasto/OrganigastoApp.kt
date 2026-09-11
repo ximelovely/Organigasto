@@ -2,11 +2,19 @@ package com.app.organigasto
 
 import android.app.Application
 import androidx.room.Room
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.app.organigasto.data.local.AppDatabase
+import com.app.organigasto.data.worker.RecurrentMovementWorker
 import com.app.organigasto.data.local.entity.CategoriaEntity
+import com.app.organigasto.data.local.entity.CuentaEntity
+import com.app.organigasto.data.local.entity.MetaAhorroEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class OrganigastoApp : Application() {
     lateinit var database: AppDatabase
@@ -20,9 +28,21 @@ class OrganigastoApp : Application() {
             this,
             AppDatabase::class.java,
             "organigasto_db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
 
         prepopulateDatabase()
+        scheduleRecurrentWork()
+    }
+
+    private fun scheduleRecurrentWork() {
+        val request = PeriodicWorkRequestBuilder<RecurrentMovementWorker>(1, TimeUnit.DAYS)
+            .build()
+        
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "RecurrentMovements",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 
     private fun prepopulateDatabase() {
@@ -36,6 +56,24 @@ class OrganigastoApp : Application() {
                     CategoriaEntity(nombre = "Ocio", icono = "movie", colorHex = "#8B7BB8", presupuestoMensual = 200.0)
                 )
                 categorias.forEach { database.categoriaDao().insertar(it) }
+            }
+
+            // Pre-poblar Cuentas
+            val countCuentas = database.cuentaDao().obtenerTodas().first().size
+            if (countCuentas == 0) {
+                val cuentas = listOf(
+                    CuentaEntity(nombre = "Efectivo", tipo = "Efectivo", saldoInicial = 0.0, saldoActual = 0.0, colorHex = "#4CAF50"),
+                    CuentaEntity(nombre = "Tarjeta Débito", tipo = "Debito", saldoInicial = 0.0, saldoActual = 0.0, colorHex = "#2196F3")
+                )
+                cuentas.forEach { database.cuentaDao().insertar(it) }
+            }
+
+            // Pre-poblar una Meta de ejemplo
+            val countMetas = database.metaAhorroDao().obtenerActivas().first().size
+            if (countMetas == 0) {
+                database.metaAhorroDao().insertar(
+                    MetaAhorroEntity(nombre = "Fondo de Emergencia", montoObjetivo = 1000.0, montoActual = 0.0)
+                )
             }
         }
     }

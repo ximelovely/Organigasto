@@ -35,10 +35,12 @@ fun AddMovementScreen(
     viewModel: MovimientosViewModel
 ) {
     val categorias by viewModel.categorias.collectAsState()
+    val cuentas by viewModel.cuentas.collectAsState() // Añadido
     
     var selectedType by remember { mutableStateOf(TipoMovimiento.GASTO) }
     var amount by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
+    var selectedCuentaId by remember { mutableStateOf<Long?>(null) } // Añadido
     var recurrencia by remember { mutableStateOf(Recurrencia.INDIVIDUAL) }
     var nota by remember { mutableStateOf("") }
 
@@ -71,17 +73,37 @@ fun AddMovementScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text("Monto", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+            Text(
+                text = "Monto",
+                color = PurpuraSecundario.copy(alpha = 0.6f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
             OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) amount = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("0.00", fontSize = 48.sp) },
-                textStyle = LocalTextStyle.current.copy(fontSize = 48.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                placeholder = { 
+                    Text(
+                        "0.00", 
+                        fontSize = 54.sp, 
+                        fontWeight = FontWeight.Black, 
+                        color = Color.LightGray,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    ) 
+                },
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 54.sp, 
+                    fontWeight = FontWeight.Black, 
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    color = PurpuraSecundario
+                ),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = PurpuraPrimario
                 )
             )
 
@@ -116,19 +138,46 @@ fun AddMovementScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            AccountAndDateSection()
+            // Account and Date
+            AccountAndDateSection(
+                cuentas = cuentas,
+                selectedCuentaId = selectedCuentaId,
+                onCuentaSelected = { selectedCuentaId = it }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Recibo
+            Text(
+                "Recibo / Factura",
+                modifier = Modifier.fillMaxWidth(),
+                fontWeight = FontWeight.Bold,
+                color = PurpuraSecundario
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { /* TODO: Abrir Cámara/Galería */ },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.PhotoCamera, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Adjuntar foto del ticket")
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
                 onClick = {
                     val montoDouble = amount.toDoubleOrNull() ?: 0.0
-                    if (montoDouble > 0 && selectedCategoryId != null) {
+                    val cuentaSeleccionada = cuentas.find { it.id == selectedCuentaId }
+                    if (montoDouble > 0 && selectedCategoryId != null && cuentaSeleccionada != null) {
                         viewModel.agregarMovimiento(
                             tipo = selectedType,
                             monto = montoDouble,
                             categoriaId = selectedCategoryId!!,
-                            cuenta = "Tarjeta debito BBVA",
+                            cuentaId = cuentaSeleccionada.id,
+                            cuentaNombre = cuentaSeleccionada.nombre,
                             fecha = LocalDate.now(),
                             recurrencia = recurrencia,
                             nota = if (nota.isEmpty()) null else nota
@@ -236,25 +285,30 @@ fun RecurrenceSelector(current: Recurrencia, onSelected: (Recurrencia) -> Unit) 
 
 @Composable
 fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val bgColor = if (isSelected) PurpuraPrimario else Color.White
+    val contentColor = if (isSelected) Color.White else PurpuraSecundario
+    
     Card(
         modifier = modifier
             .height(80.dp)
-            .clickable { onClick() }
-            .border(
-                width = if (isSelected) 2.dp else 0.dp,
-                color = if (isSelected) PurpuraSecundario else Color.Transparent,
-                shape = RoundedCornerShape(16.dp)
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null, tint = PurpuraSecundario)
-            Text(name, fontSize = 12.sp, color = PurpuraSecundario)
+            Icon(
+                imageVector = icon, 
+                contentDescription = null, 
+                tint = contentColor,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(name, fontSize = 11.sp, color = contentColor, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -291,21 +345,83 @@ fun RecurrenceSubButton(text: String, isSelected: Boolean, onClick: () -> Unit) 
 }
 
 @Composable
-fun AccountAndDateSection() {
+fun AccountAndDateSection(
+    cuentas: List<com.app.organigasto.data.local.entity.CuentaEntity>,
+    selectedCuentaId: Long?,
+    onCuentaSelected: (Long) -> Unit
+) {
+    var showCuentaDialog by remember { mutableStateOf(false) }
+    val cuentaSeleccionada = cuentas.find { it.id == selectedCuentaId }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column {
             Text("Cuenta/Tarjeta", fontWeight = FontWeight.Bold, color = PurpuraSecundario)
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .clickable { showCuentaDialog = true },
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White
             ) {
                 Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Tarjeta debito BBVA", color = PurpuraSecundario)
+                    Text(
+                        text = cuentaSeleccionada?.nombre ?: "Seleccionar cuenta",
+                        color = if (cuentaSeleccionada != null) PurpuraSecundario else Color.Gray
+                    )
                     Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = PurpuraSecundario)
                 }
             }
         }
+        
+        if (showCuentaDialog) {
+            AlertDialog(
+                onDismissRequest = { showCuentaDialog = false },
+                title = { Text("¿De qué cuenta sale el dinero?", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(28.dp),
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        cuentas.forEach { cuenta ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onCuentaSelected(cuenta.id)
+                                        showCuentaDialog = false
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (selectedCuentaId == cuenta.id) PurpuraPrimario.copy(alpha = 0.1f) else Color.Transparent
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(cuenta.nombre, fontWeight = FontWeight.Bold, color = PurpuraSecundario)
+                                        Text(cuenta.tipo, fontSize = 10.sp, color = Color.Gray)
+                                    }
+                                    Text(
+                                        "$${String.format("%.2f", cuenta.saldoActual)}", 
+                                        fontWeight = FontWeight.Black, 
+                                        color = PurpuraSecundario
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showCuentaDialog = false }) {
+                        Text("Cerrar", color = PurpuraPrimario, fontWeight = FontWeight.Bold)
+                    }
+                }
+            )
+        }
+
         Column {
             Text("Fecha", fontWeight = FontWeight.Bold, color = PurpuraSecundario)
             Surface(
@@ -314,7 +430,7 @@ fun AccountAndDateSection() {
                 color = Color.White
             ) {
                 Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("29 de Agosto 2026", color = PurpuraSecundario)
+                    Text(LocalDate.now().toString(), color = PurpuraSecundario)
                     Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PurpuraSecundario)
                 }
             }

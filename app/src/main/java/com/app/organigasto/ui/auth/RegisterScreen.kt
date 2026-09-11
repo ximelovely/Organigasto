@@ -20,14 +20,23 @@ import com.app.organigasto.ui.theme.PurpuraSecundario
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onLoginClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    authViewModel: AuthViewModel // Añadido
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val authError by authViewModel.authError.collectAsState()
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    var localError by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            onRegisterSuccess()
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -56,7 +65,11 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = { 
+                    name = it
+                    authViewModel.clearError()
+                    localError = null
+                },
                 label = { Text("Nombre completo") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -70,7 +83,11 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { 
+                    email = it
+                    authViewModel.clearError()
+                    localError = null
+                },
                 label = { Text("Correo electrónico") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -84,7 +101,11 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { 
+                    password = it
+                    authViewModel.clearError()
+                    localError = null
+                },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
@@ -99,7 +120,11 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                onValueChange = { 
+                    confirmPassword = it
+                    authViewModel.clearError()
+                    localError = null
+                },
                 label = { Text("Confirmar contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
@@ -110,9 +135,10 @@ fun RegisterScreen(
                 )
             )
 
-            if (errorMessage != null) {
+            val displayError = authError ?: localError
+            if (displayError != null) {
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                Text(text = displayError, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             }
 
             if (successMessage != null) {
@@ -126,15 +152,14 @@ fun RegisterScreen(
                 onClick = {
                     successMessage = null
                     if (name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                        errorMessage = "Todos los campos son obligatorios"
+                        localError = "Todos los campos son obligatorios"
                     } else if (!email.contains("@") || !email.contains(".")) {
-                        errorMessage = "El correo electrónico no es válido"
+                        localError = "El correo electrónico no es válido"
                     } else if (password != confirmPassword) {
-                        errorMessage = "Las contraseñas no coinciden"
+                        localError = "Las contraseñas no coinciden"
                     } else {
-                        errorMessage = null
-                        successMessage = "¡Cuenta creada con éxito! Redirigiendo..."
-                        onRegisterSuccess()
+                        localError = null
+                        authViewModel.register(name, email, password)
                     }
                 },
                 modifier = Modifier

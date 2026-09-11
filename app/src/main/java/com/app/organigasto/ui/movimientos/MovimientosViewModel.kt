@@ -3,10 +3,8 @@ package com.app.organigasto.ui.movimientos
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.app.organigasto.data.local.dao.MovimientoDao
-import com.app.organigasto.data.local.dao.CategoriaDao
-import com.app.organigasto.data.local.entity.MovimientoEntity
-import com.app.organigasto.data.local.entity.CategoriaEntity
+import com.app.organigasto.data.local.dao.*
+import com.app.organigasto.data.local.entity.*
 import com.app.organigasto.domain.model.TipoMovimiento
 import com.app.organigasto.domain.model.Recurrencia
 import kotlinx.coroutines.flow.*
@@ -23,39 +21,69 @@ data class GastoCategoria(
 
 class MovimientosViewModel(
     private val movimientoDao: MovimientoDao,
-    private val categoriaDao: CategoriaDao
+    private val categoriaDao: CategoriaDao,
+    private val cuentaDao: CuentaDao,
+    private val metaAhorroDao: MetaAhorroDao,
+    private val suscripcionDao: SuscripcionDao,
+    private val deudaDao: DeudaDao
 ) : ViewModel() {
 
     private val _filtroTiempo = MutableStateFlow("Mensual")
     val filtroTiempo: StateFlow<String> = _filtroTiempo.asStateFlow()
 
+    private val _busqueda = MutableStateFlow("")
+    val busqueda: StateFlow<String> = _busqueda.asStateFlow()
+
     val categorias: StateFlow<List<CategoriaEntity>> = categoriaDao
         .obtenerTodas()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val movimientosFiltrados: StateFlow<List<MovimientoEntity>> = _filtroTiempo
-        .flatMapLatest { filtro ->
-            val hoy = LocalDate.now()
-            when (filtro) {
-                "Semanal" -> {
-                    val inicio = hoy.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                    val fin = hoy.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
-                    movimientoDao.obtenerPorRango(inicio, fin)
-                }
-                "Mensual" -> {
-                    val inicio = hoy.with(TemporalAdjusters.firstDayOfMonth())
-                    val fin = hoy.with(TemporalAdjusters.lastDayOfMonth())
-                    movimientoDao.obtenerPorRango(inicio, fin)
-                }
-                "Anual" -> {
-                    val inicio = hoy.with(TemporalAdjusters.firstDayOfYear())
-                    val fin = hoy.with(TemporalAdjusters.lastDayOfYear())
-                    movimientoDao.obtenerPorRango(inicio, fin)
-                }
-                else -> movimientoDao.obtenerTodos()
-            }
-        }
+    val cuentas: StateFlow<List<CuentaEntity>> = cuentaDao
+        .obtenerTodas()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val metasAhorro: StateFlow<List<MetaAhorroEntity>> = metaAhorroDao
+        .obtenerActivas()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val suscripciones: StateFlow<List<SuscripcionEntity>> = suscripcionDao
+        .obtenerActivas()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deudas: StateFlow<List<DeudaEntity>> = deudaDao
+        .obtenerPendientes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val movimientosFiltrados: StateFlow<List<MovimientoEntity>> = combine(
+        _filtroTiempo,
+        _busqueda
+    ) { filtro, query ->
+        val hoy = LocalDate.now()
+        val lista = when (filtro) {
+            "Semanal" -> {
+                val inicio = hoy.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val fin = hoy.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                movimientoDao.obtenerPorRango(inicio, fin).first()
+            }
+            "Mensual" -> {
+                val inicio = hoy.with(TemporalAdjusters.firstDayOfMonth())
+                val fin = hoy.with(TemporalAdjusters.lastDayOfMonth())
+                movimientoDao.obtenerPorRango(inicio, fin).first()
+            }
+            "Anual" -> {
+                val inicio = hoy.with(TemporalAdjusters.firstDayOfYear())
+                val fin = hoy.with(TemporalAdjusters.lastDayOfYear())
+                movimientoDao.obtenerPorRango(inicio, fin).first()
+            }
+            else -> movimientoDao.obtenerTodos().first()
+        }
+        
+        if (query.isBlank()) lista
+        else lista.filter { 
+            it.nota?.contains(query, ignoreCase = true) == true || 
+            it.cuenta.contains(query, ignoreCase = true) 
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val balanceTotal: StateFlow<Double> = movimientosFiltrados.map { lista ->
         lista.sumOf { if (it.tipo == TipoMovimiento.INGRESO) it.monto else -it.monto }
@@ -88,11 +116,16 @@ class MovimientosViewModel(
         _filtroTiempo.value = filtro
     }
 
+    fun buscar(query: String) {
+        _busqueda.value = query
+    }
+
     fun agregarMovimiento(
         tipo: TipoMovimiento,
         monto: Double,
         categoriaId: Long,
-        cuenta: String,
+        cuentaId: Long, // Cambiado de String a Long
+        cuentaNombre: String, // Mantener para el registro visual por ahora
         fecha: LocalDate,
         recurrencia: Recurrencia,
         nota: String? = null
@@ -102,12 +135,22 @@ class MovimientosViewModel(
                 tipo = tipo,
                 monto = monto,
                 categoriaId = categoriaId,
-                cuenta = cuenta,
+                cuenta = cuentaNombre,
                 fecha = fecha,
                 recurrencia = recurrencia,
                 nota = nota
             )
             movimientoDao.insertar(nuevo)
+            
+            // Ajustar el saldo de la cuenta
+            val ajuste = if (tipo == TipoMovimiento.INGRESO) monto else -monto
+            cuentaDao.ajustarSaldo(cuentaId, ajuste)
+        }
+    }
+
+    fun agregarCuenta(nombre: String, tipo: String, saldo: Double) {
+        viewModelScope.launch {
+            cuentaDao.insertar(CuentaEntity(nombre = nombre, tipo = tipo, saldoInicial = saldo, saldoActual = saldo))
         }
     }
 
@@ -116,16 +159,72 @@ class MovimientosViewModel(
             movimientoDao.eliminar(movimiento)
         }
     }
+
+    fun actualizarPresupuesto(categoriaId: Long, monto: Double) {
+        viewModelScope.launch {
+            categoriaDao.actualizarPresupuesto(categoriaId, monto)
+        }
+    }
+
+    fun agregarCategoria(nombre: String, icono: String, colorHex: String, presupuesto: Double = 0.0) {
+        viewModelScope.launch {
+            categoriaDao.insertar(CategoriaEntity(nombre = nombre, icono = icono, colorHex = colorHex, presupuestoMensual = presupuesto))
+        }
+    }
+
+    fun eliminarCategoria(categoria: CategoriaEntity) {
+        viewModelScope.launch {
+            categoriaDao.eliminar(categoria)
+        }
+    }
+
+    fun abonarAMeta(metaId: Long, monto: Double) {
+        viewModelScope.launch {
+            metaAhorroDao.abonarAMeta(metaId, monto)
+        }
+    }
+
+    fun agregarSuscripcion(nombre: String, monto: Double, proximoPago: LocalDate, categoriaId: Long) {
+        viewModelScope.launch {
+            suscripcionDao.insertar(SuscripcionEntity(nombre = nombre, monto = monto, proximoPago = proximoPago, categoriaId = categoriaId))
+        }
+    }
+
+    fun liquidarDeuda(id: Long) {
+        viewModelScope.launch {
+            deudaDao.liquidar(id)
+        }
+    }
+
+    fun agregarDeuda(persona: String, monto: Double, esPrestamo: Boolean, fechaLimite: LocalDate? = null) {
+        viewModelScope.launch {
+            deudaDao.insertar(DeudaEntity(persona = persona, monto = monto, esPrestamo = esPrestamo, fecha = LocalDate.now(), fechaLimite = fechaLimite))
+        }
+    }
+
+    fun exportarDatosACsv(): String {
+        val lista = movimientosFiltrados.value
+        val sb = StringBuilder()
+        sb.append("Fecha,Tipo,Monto,Cuenta,Nota\n")
+        lista.forEach { mov ->
+            sb.append("${mov.fecha},${mov.tipo},${mov.monto},${mov.cuenta},${mov.nota ?: ""}\n")
+        }
+        return sb.toString()
+    }
 }
 
 class MovimientosViewModelFactory(
     private val movimientoDao: MovimientoDao,
-    private val categoriaDao: CategoriaDao
+    private val categoriaDao: CategoriaDao,
+    private val cuentaDao: CuentaDao,
+    private val metaAhorroDao: MetaAhorroDao,
+    private val suscripcionDao: SuscripcionDao,
+    private val deudaDao: DeudaDao
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MovimientosViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MovimientosViewModel(movimientoDao, categoriaDao) as T
+            return MovimientosViewModel(movimientoDao, categoriaDao, cuentaDao, metaAhorroDao, suscripcionDao, deudaDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

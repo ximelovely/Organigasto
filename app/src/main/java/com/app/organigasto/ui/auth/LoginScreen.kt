@@ -19,11 +19,20 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onRegisterClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    authViewModel: AuthViewModel // Añadido
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val authError by authViewModel.authError.collectAsState() // Usar del ViewModel
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState() // Observar el estado
+
+    // Si el login es exitoso, navegar
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            onLoginSuccess()
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -51,7 +60,10 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { 
+                    email = it
+                    authViewModel.clearError() 
+                },
                 label = { Text("Correo electrónico") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -65,7 +77,10 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { 
+                    password = it
+                    authViewModel.clearError()
+                },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
@@ -76,10 +91,10 @@ fun LoginScreen(
                 )
             )
 
-            if (errorMessage != null) {
+            if (authError != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = errorMessage!!,
+                    text = authError!!,
                     color = MaterialTheme.colorScheme.error,
                     fontSize = 13.sp
                 )
@@ -90,10 +105,10 @@ fun LoginScreen(
             Button(
                 onClick = {
                     if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Todos los campos son obligatorios"
+                        // Error local opcional o dejar que el VM maneje
+                        authViewModel.login(email, password)
                     } else {
-                        errorMessage = null
-                        onLoginSuccess()
+                        authViewModel.login(email, password)
                     }
                 },
                 modifier = Modifier

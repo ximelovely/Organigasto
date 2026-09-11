@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,6 +55,11 @@ fun StatsScreen(viewModel: MovimientosViewModel) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { 
+                        viewModel.exportarDatosACsv()
+                    }) {
+                        Icon(Icons.Default.Share, contentDescription = "Exportar CSV", tint = PurpuraSecundario)
+                    }
                     IconButton(onClick = { }) {
                         Icon(Icons.Default.Settings, contentDescription = null, tint = PurpuraSecundario)
                     }
@@ -93,6 +99,17 @@ fun StatsScreen(viewModel: MovimientosViewModel) {
 
             item {
                 BudgetUsageSection(movimientos)
+            }
+
+            item {
+                Text(
+                    "Tendencia de gastos",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PurpuraSecundario
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                TrendChart(movimientos)
             }
 
             item {
@@ -217,6 +234,54 @@ fun BudgetUsageSection(movimientos: List<MovimientoEntity>) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text("${(porcentaje * 100).toInt()} %", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = PurpuraSecundario)
+        }
+    }
+}
+
+@Composable
+fun TrendChart(movimientos: List<MovimientoEntity>) {
+    val gastosPorDia = movimientos
+        .filter { it.tipo == TipoMovimiento.GASTO }
+        .groupBy { it.fecha }
+        .mapValues { it.value.sumOf { m -> m.monto } }
+        .toList()
+        .sortedBy { it.first }
+
+    if (gastosPorDia.isEmpty()) {
+        Card(modifier = Modifier.fillMaxWidth().height(150.dp), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text("No hay suficientes datos", color = Color.Gray)
+            }
+        }
+        return
+    }
+
+    val maxGasto = gastosPorDia.maxOf { it.second }.toFloat().coerceAtLeast(1f)
+
+    Card(
+        modifier = Modifier.fillMaxWidth().height(200.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            val spaceX = size.width / (gastosPorDia.size.coerceAtLeast(2) - 1)
+            val points = gastosPorDia.mapIndexed { index, (_, monto) ->
+                Offset(index * spaceX, size.height - (monto.toFloat() / maxGasto * size.height))
+            }
+
+            for (i in 0 until points.size - 1) {
+                drawLine(
+                    color = PurpuraPrimario,
+                    start = points[i],
+                    end = points[i + 1],
+                    strokeWidth = 8f,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+            }
+            
+            points.forEach { point ->
+                drawCircle(color = PurpuraSecundario, radius = 6f, center = point)
+            }
         }
     }
 }
