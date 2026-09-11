@@ -102,9 +102,18 @@ fun AddMovementScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp),
+                        .height(110.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    if (amount.isEmpty()) {
+                        Text(
+                            "0.00", 
+                            fontSize = 64.sp, 
+                            fontWeight = FontWeight.Black, 
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        ) 
+                    }
                     androidx.compose.foundation.text.BasicTextField(
                         value = amount,
                         onValueChange = { 
@@ -119,20 +128,7 @@ fun AddMovementScreen(
                         ),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                        decorationBox = { innerTextField ->
-                            Box(contentAlignment = Alignment.Center) {
-                                if (amount.isEmpty()) {
-                                    Text(
-                                        "0.00", 
-                                        fontSize = 64.sp, 
-                                        fontWeight = FontWeight.Black, 
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                    ) 
-                                }
-                                innerTextField()
-                            }
-                        }
+                        singleLine = true
                     )
                 }
 

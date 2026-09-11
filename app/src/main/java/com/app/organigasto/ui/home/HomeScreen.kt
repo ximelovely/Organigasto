@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -448,18 +449,12 @@ fun RecurrentMovementsSection(title: String, movimientos: List<MovimientoEntity>
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(movimientos.size) { index ->
                 val mov = movimientos[index]
-                val proximaFecha = when (mov.recurrencia) {
-                    com.app.organigasto.domain.model.Recurrencia.SEMANAL -> mov.fecha.plusWeeks(1)
-                    com.app.organigasto.domain.model.Recurrencia.QUINCENAL -> mov.fecha.plusWeeks(2)
-                    com.app.organigasto.domain.model.Recurrencia.MENSUAL -> mov.fecha.plusMonths(1)
-                    else -> mov.fecha
-                }
-
+                
                 RecurrentItemCard(
                     title = mov.nota ?: "Programado",
                     amount = "$${mov.monto}",
-                    date = "Próximo: $proximaFecha",
-                    icon = if (mov.tipo == TipoMovimiento.INGRESO) Icons.Default.TrendingUp else Icons.Default.Repeat
+                    date = "Siguiente: ${mov.fecha}",
+                    icon = if (mov.tipo == TipoMovimiento.INGRESO) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.Repeat
                 )
             }
         }
