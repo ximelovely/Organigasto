@@ -29,7 +29,9 @@ import com.app.organigasto.ui.theme.PurpuraSecundario
 fun MainScreen(
     onAddMovementClick: () -> Unit,
     onBudgetEditClick: () -> Unit,
-    onCalendarClick: () -> Unit, // Añadido
+    onCalendarClick: () -> Unit,
+    onAccountClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     movimientosViewModel: MovimientosViewModel
 ) {
     val navController = rememberNavController()
@@ -42,13 +44,15 @@ fun MainScreen(
         NavHost(
             navController = navController,
             startDestination = Screen.Main.Home.route,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
         ) {
             composable(Screen.Main.Home.route) {
                 HomeScreen(
                     onAddMovementClick = onAddMovementClick,
                     onBudgetEditClick = onBudgetEditClick,
-                    onCalendarClick = onCalendarClick, // Pasado
+                    onCalendarClick = onCalendarClick,
+                    onAccountClick = onAccountClick,
+                    onSettingsClick = onSettingsClick,
                     viewModel = movimientosViewModel
                 )
             }
@@ -75,8 +79,8 @@ fun BottomNavigationBar(navController: NavHostController) {
     )
 
     NavigationBar(
-        containerColor = Color.White,
-        contentColor = PurpuraSecundario
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.primary
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
@@ -96,11 +100,11 @@ fun BottomNavigationBar(navController: NavHostController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = PurpuraPrimario,
-                    selectedTextColor = PurpuraPrimario,
-                    indicatorColor = PurpuraPrimario.copy(alpha = 0.1f),
-                    unselectedIconColor = PurpuraSecundario.copy(alpha = 0.6f),
-                    unselectedTextColor = PurpuraSecundario.copy(alpha = 0.6f)
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             )
         }

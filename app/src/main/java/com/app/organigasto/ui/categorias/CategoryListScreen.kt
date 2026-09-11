@@ -35,21 +35,21 @@ fun CategoryListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Categorías", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
+                title = { Text("Categorías", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = PurpuraSecundario)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
                 actions = {
                     IconButton(onClick = onAddCategoryClick) {
-                        Icon(Icons.Default.Add, contentDescription = "Añadir Categoría", tint = PurpuraSecundario)
+                        Icon(Icons.Default.Add, contentDescription = "Añadir Categoría", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CremaFondo)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = CremaFondo
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -77,7 +77,7 @@ fun CategoryListItem(categoria: CategoriaEntity, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -97,10 +97,10 @@ fun CategoryListItem(categoria: CategoriaEntity, onDelete: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(PurpuraPrimario.copy(alpha = 0.1f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = PurpuraPrimario, modifier = Modifier.size(24.dp))
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -109,14 +109,14 @@ fun CategoryListItem(categoria: CategoriaEntity, onDelete: () -> Unit) {
                 Text(
                     text = categoria.nombre,
                     fontWeight = FontWeight.Bold,
-                    color = PurpuraSecundario,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 17.sp
                 )
                 if (categoria.presupuestoMensual > 0) {
                     Text(
                         text = "Presupuesto: $${categoria.presupuestoMensual}",
                         fontSize = 11.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
             }

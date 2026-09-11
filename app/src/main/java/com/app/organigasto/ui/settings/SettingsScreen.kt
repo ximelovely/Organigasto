@@ -16,13 +16,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.material.icons.filled.Fingerprint
+import com.app.organigasto.ui.auth.AuthViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
-    onResetTutorialClick: () -> Unit
+    onResetTutorialClick: () -> Unit,
+    authViewModel: AuthViewModel
 ) {
     var darkModeEnabled by remember { mutableStateOf(false) }
+    var biometricEnabled by remember { mutableStateOf(authViewModel.isBiometricEnabled) }
 
     Scaffold(
         topBar = {
@@ -79,6 +84,37 @@ fun SettingsScreen(
                     Switch(
                         checked = darkModeEnabled,
                         onCheckedChange = { darkModeEnabled = it }
+                    )
+                }
+            }
+            
+            // Fila de Biometría
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Fingerprint, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Usar Huella Digital", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Desbloqueo biométrico rápido", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        }
+                    }
+                    Switch(
+                        checked = biometricEnabled,
+                        onCheckedChange = { 
+                            biometricEnabled = it
+                            authViewModel.setBiometricEnabled(it)
+                        }
                     )
                 }
             }

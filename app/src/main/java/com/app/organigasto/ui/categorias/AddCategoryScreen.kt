@@ -51,16 +51,16 @@ fun AddCategoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nueva Categoría", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
+                title = { Text("Nueva Categoría", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = PurpuraSecundario)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CremaFondo)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = CremaFondo
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -76,8 +76,8 @@ fun AddCategoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.4f)
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
             )
 
@@ -88,12 +88,12 @@ fun AddCategoryScreen(
                 onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) presupuesto = it },
                 label = { Text("Presupuesto mensual (Opcional)") },
                 modifier = Modifier.fillMaxWidth(),
-                prefix = { Text("$", fontWeight = FontWeight.Bold, color = PurpuraPrimario) },
+                prefix = { Text("$", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.4f)
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
             )
 
@@ -103,7 +103,7 @@ fun AddCategoryScreen(
                 "Selecciona un icono",
                 modifier = Modifier.fillMaxWidth(),
                 fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -139,9 +139,9 @@ fun AddCategoryScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Crear Categoría", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Crear Categoría", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }
@@ -153,7 +153,7 @@ fun IconOptionItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) 
         modifier = Modifier
             .size(56.dp)
             .background(
-                if (isSelected) PurpuraPrimario else Color.White,
+                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
@@ -162,7 +162,7 @@ fun IconOptionItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) 
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (isSelected) Color.White else PurpuraSecundario,
+            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(24.dp)
         )
     }

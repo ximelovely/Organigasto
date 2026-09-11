@@ -7,10 +7,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.app.organigasto.ui.navigation.OrganigastoNavGraph
@@ -21,24 +19,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            var isUnlocked by remember { mutableStateOf(false) }
-            
             OrganigastoTheme {
-                if (isUnlocked) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     OrganigastoNavGraph()
-                } else {
-                    LockScreen(onUnlock = { showBiometricPrompt { isUnlocked = true } })
                 }
-            }
-            
-            // Intentar desbloquear automáticamente al inicio
-            LaunchedEffect(Unit) {
-                showBiometricPrompt { isUnlocked = true }
             }
         }
     }
 
-    private fun showBiometricPrompt(onSuccess: () -> Unit) {
+    fun showBiometricPrompt(onSuccess: () -> Unit) {
         val executor = ContextCompat.getMainExecutor(this)
         val biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
@@ -55,14 +47,5 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         biometricPrompt.authenticate(promptInfo)
-    }
-}
-
-@Composable
-fun LockScreen(onUnlock: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Button(onClick = onUnlock) {
-            Text("Desbloquear con Biometría")
-        }
     }
 }

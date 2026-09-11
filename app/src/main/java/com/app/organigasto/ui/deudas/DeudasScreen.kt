@@ -29,16 +29,16 @@ fun DeudasScreen(viewModel: MovimientosViewModel) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Cuentas Pendientes", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = CremaFondo)
+                title = { Text("Cuentas Pendientes", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }, containerColor = PurpuraPrimario) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir", tint = Color.White)
+            FloatingActionButton(onClick = { showAddDialog = true }, containerColor = MaterialTheme.colorScheme.primary) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir", tint = MaterialTheme.colorScheme.onPrimary)
             }
         },
-        containerColor = CremaFondo
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
@@ -73,9 +73,13 @@ fun DeudasScreen(viewModel: MovimientosViewModel) {
 
 @Composable
 fun DeudaSummaryCard(label: String, amount: Double, color: Color, modifier: Modifier) {
-    Card(modifier = modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+    Card(
+        modifier = modifier, 
+        shape = RoundedCornerShape(20.dp), 
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
             Text("$${String.format("%.0f", amount)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = color)
         }
     }
@@ -86,7 +90,7 @@ fun DeudaItem(deuda: DeudaEntity, onLiquidada: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -101,13 +105,13 @@ fun DeudaItem(deuda: DeudaEntity, onLiquidada: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(deuda.persona, fontWeight = FontWeight.Bold, color = PurpuraSecundario)
-                Text(if (deuda.esPrestamo) "Préstamo realizado" else "Deuda pendiente", fontSize = 11.sp, color = Color.Gray)
+                Text(deuda.persona, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(if (deuda.esPrestamo) "Préstamo realizado" else "Deuda pendiente", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("$${deuda.monto}", fontWeight = FontWeight.Black, color = PurpuraSecundario)
+                Text("$${deuda.monto}", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                 TextButton(onClick = onLiquidada, contentPadding = PaddingValues(0.dp)) {
-                    Text("Liquidar", fontSize = 10.sp, color = PurpuraPrimario)
+                    Text("Liquidar", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -122,17 +126,42 @@ fun AddDeudaDialog(onDismiss: () -> Unit, onConfirm: (String, Double, Boolean) -
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nueva Deuda/Préstamo", fontWeight = FontWeight.Bold) },
+        title = { Text("Nueva Deuda/Préstamo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+        containerColor = MaterialTheme.colorScheme.surface,
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = persona, onValueChange = { persona = it }, label = { Text("Persona") })
-                OutlinedTextField(value = monto, onValueChange = { monto = it }, label = { Text("Monto") })
+                OutlinedTextField(
+                    value = persona, 
+                    onValueChange = { persona = it }, 
+                    label = { Text("Persona") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                )
+                OutlinedTextField(
+                    value = monto, 
+                    onValueChange = { monto = it }, 
+                    label = { Text("Monto") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = esPrestamo, onClick = { esPrestamo = true })
-                    Text("Me deben")
+                    RadioButton(
+                        selected = esPrestamo, 
+                        onClick = { esPrestamo = true },
+                        colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                    )
+                    Text("Me deben", color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.width(16.dp))
-                    RadioButton(selected = !esPrestamo, onClick = { esPrestamo = false })
-                    Text("Yo debo")
+                    RadioButton(
+                        selected = !esPrestamo, 
+                        onClick = { esPrestamo = false },
+                        colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                    )
+                    Text("Yo debo", color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         },

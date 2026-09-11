@@ -10,12 +10,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel(private val userDao: UserDao) : ViewModel() {
+import com.app.organigasto.data.local.PreferenceManager
+
+class AuthViewModel(
+    private val userDao: UserDao,
+    private val preferenceManager: PreferenceManager
+) : ViewModel() {
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
+    
+    val isBiometricEnabled = preferenceManager.isBiometricEnabled
+    val hasLoggedInOnce = preferenceManager.hasLoggedInOnce
 
     fun login(email: String, pass: String) {
         viewModelScope.launch {
@@ -23,10 +31,20 @@ class AuthViewModel(private val userDao: UserDao) : ViewModel() {
             if (user != null && user.password == pass) {
                 _isLoggedIn.value = true
                 _authError.value = null
+                preferenceManager.hasLoggedInOnce = true
+                preferenceManager.userEmail = email
             } else {
                 _authError.value = "Correo o contraseña incorrectos"
             }
         }
+    }
+    
+    fun setBiometricEnabled(enabled: Boolean) {
+        preferenceManager.isBiometricEnabled = enabled
+    }
+    
+    fun logout() {
+        _isLoggedIn.value = false
     }
 
     fun register(name: String, email: String, pass: String) {
@@ -48,11 +66,14 @@ class AuthViewModel(private val userDao: UserDao) : ViewModel() {
     }
 }
 
-class AuthViewModelFactory(private val userDao: UserDao) : ViewModelProvider.Factory {
+class AuthViewModelFactory(
+    private val userDao: UserDao,
+    private val preferenceManager: PreferenceManager
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AuthViewModel(userDao) as T
+            return AuthViewModel(userDao, preferenceManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

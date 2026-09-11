@@ -37,16 +37,16 @@ fun BudgetManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Gestionar Presupuestos", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
+                title = { Text("Gestionar Presupuestos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = PurpuraSecundario)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CremaFondo)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = CremaFondo
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -99,7 +99,7 @@ fun BudgetItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -119,20 +119,20 @@ fun BudgetItem(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(PurpuraPrimario.copy(alpha = 0.1f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = PurpuraPrimario, modifier = Modifier.size(24.dp))
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(categoria.nombre, fontWeight = FontWeight.Bold, color = PurpuraSecundario, fontSize = 16.sp)
+                Text(categoria.nombre, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
                 Text(
                     text = "Límite: $${categoria.presupuestoMensual}", 
                     fontSize = 11.sp, 
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -147,14 +147,16 @@ fun BudgetItem(
                 },
                 modifier = Modifier.width(110.dp),
                 placeholder = { Text("0.00", fontSize = 14.sp) },
-                prefix = { Text("$", fontWeight = FontWeight.Bold, color = PurpuraPrimario) },
+                prefix = { Text("$", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PurpuraPrimario,
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.4f),
-                    focusedContainerColor = PurpuraPrimario.copy(alpha = 0.05f)
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
                 textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold)
             )

@@ -1,6 +1,7 @@
 package com.app.organigasto.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -17,6 +18,9 @@ import com.app.organigasto.ui.presupuesto.BudgetManagementScreen
 import com.app.organigasto.ui.categorias.CategoryListScreen
 import com.app.organigasto.ui.categorias.AddCategoryScreen
 import com.app.organigasto.ui.calendario.FinancialCalendarScreen
+import com.app.organigasto.ui.tutorial.TutorialScreen
+import com.app.organigasto.ui.account.AccountScreen
+import com.app.organigasto.ui.settings.SettingsScreen
 
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,13 +30,16 @@ import com.app.organigasto.ui.auth.AuthViewModelFactory
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
 import com.app.organigasto.ui.movimientos.MovimientosViewModelFactory
 
+import com.app.organigasto.data.local.PreferenceManager
+
 @Composable
 fun OrganigastoNavGraph() {
     val context = LocalContext.current
     val database = (context.applicationContext as OrganigastoApp).database
+    val preferenceManager = remember { PreferenceManager(context) }
     
     val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(database.userDao())
+        factory = AuthViewModelFactory(database.userDao(), preferenceManager)
     )
     
     val movimientosViewModel: MovimientosViewModel = viewModel(
@@ -87,7 +94,9 @@ fun OrganigastoNavGraph() {
             MainScreen(
                 onAddMovementClick = { navController.navigate(Screen.AddMovement.route) },
                 onBudgetEditClick = { navController.navigate(Screen.Budget.route) },
-                onCalendarClick = { navController.navigate(Screen.Calendar.route) }, // Añadido
+                onCalendarClick = { navController.navigate(Screen.Calendar.route) },
+                onAccountClick = { navController.navigate(Screen.Account.route) },
+                onSettingsClick = { navController.navigate(Screen.Settings.route) },
                 movimientosViewModel = movimientosViewModel
             )
         }
@@ -121,6 +130,36 @@ fun OrganigastoNavGraph() {
             FinancialCalendarScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = movimientosViewModel
+            )
+        }
+        composable(Screen.Tutorial.route) {
+            TutorialScreen(
+                onFinish = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Tutorial.route) { inclusive = true }
+                    }
+                },
+                viewModel = movimientosViewModel
+            )
+        }
+        composable(Screen.Account.route) {
+            AccountScreen(
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = {
+                    authViewModel.logout()
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onBackClick = { navController.popBackStack() },
+                onResetTutorialClick = {
+                    navController.navigate(Screen.Tutorial.route)
+                },
+                authViewModel = authViewModel
             )
         }
     }

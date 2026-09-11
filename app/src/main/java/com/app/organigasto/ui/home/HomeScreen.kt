@@ -35,7 +35,9 @@ import com.app.organigasto.domain.model.TipoMovimiento
 fun HomeScreen(
     onAddMovementClick: () -> Unit,
     onBudgetEditClick: () -> Unit,
-    onCalendarClick: () -> Unit, // Añadido
+    onCalendarClick: () -> Unit,
+    onAccountClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     viewModel: MovimientosViewModel
 ) {
     val movimientos by viewModel.movimientosFiltrados.collectAsState()
@@ -48,7 +50,7 @@ fun HomeScreen(
     val metasAhorro by viewModel.metasAhorro.collectAsState() // Añadido
 
     Scaffold(
-        topBar = { HomeTopBar(onCalendarClick) },
+        topBar = { HomeTopBar(onCalendarClick, onAccountClick, onSettingsClick) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddMovementClick,
@@ -59,8 +61,7 @@ fun HomeScreen(
                 Icon(Icons.Default.Add, contentDescription = "Agregar")
             }
         },
-        containerColor = CremaFondo,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -116,7 +117,7 @@ fun HomeScreen(
                     "Movimientos recientes",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PurpuraSecundario
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -138,7 +139,7 @@ fun MovementItem(movimiento: MovimientoEntity, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -161,8 +162,8 @@ fun MovementItem(movimiento: MovimientoEntity, onDelete: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(movimiento.cuenta, fontWeight = FontWeight.Bold)
-                Text(movimiento.fecha.toString(), fontSize = 12.sp, color = Color.Gray)
+                Text(movimiento.cuenta, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(movimiento.fecha.toString(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -179,7 +180,7 @@ fun MovementItem(movimiento: MovimientoEntity, onDelete: () -> Unit) {
                 }
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Gray)
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
         }
     }
@@ -193,7 +194,7 @@ fun AccountsSection(cuentas: List<com.app.organigasto.data.local.entity.CuentaEn
             "Mis Cuentas",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = PurpuraSecundario
+            color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(16.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -254,48 +255,48 @@ fun CustomSearchBar(query: String, onQueryChange: (String) -> Unit) {
         value = query,
         onValueChange = onQueryChange,
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Buscar movimientos...", color = GrayText) },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = PurpuraSecundario) },
+        placeholder = { Text("Buscar movimientos...", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, contentDescription = null) } },
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PurpuraPrimario,
-            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
         ),
         singleLine = true
     )
 }
-    @OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar(onCalendarClick: () -> Unit) { // Añadido callback
+fun HomeTopBar(onCalendarClick: () -> Unit, onAccountClick: () -> Unit, onSettingsClick: () -> Unit) {
     CenterAlignedTopAppBar(
         title = {
             Text(
                 "OrganiGasto",
                 fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
+                color = MaterialTheme.colorScheme.primary
             )
         },
         navigationIcon = {
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.AccountCircle, contentDescription = "Perfil", tint = PurpuraSecundario)
+            IconButton(onClick = onAccountClick) {
+                Icon(Icons.Default.AccountCircle, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.primary)
             }
         },
         actions = {
-            IconButton(onClick = onCalendarClick) { // Cambiado
-                Icon(Icons.Default.CalendarMonth, contentDescription = "Calendario", tint = PurpuraSecundario)
+            IconButton(onClick = onCalendarClick) {
+                Icon(Icons.Default.CalendarMonth, contentDescription = "Calendario", tint = MaterialTheme.colorScheme.primary)
             }
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = PurpuraSecundario)
+            IconButton(onClick = onSettingsClick) {
+                Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = MaterialTheme.colorScheme.primary)
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = CremaFondo,
-            titleContentColor = PurpuraSecundario,
-            navigationIconContentColor = PurpuraSecundario,
-            actionIconContentColor = PurpuraSecundario
+            containerColor = MaterialTheme.colorScheme.background,
+            titleContentColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.primary,
+            actionIconContentColor = MaterialTheme.colorScheme.primary
         )
     )
 }
@@ -340,7 +341,7 @@ fun HeaderBalanceCard(balance: Double, filtro: String) {
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = "Gastos bajo control ✨",
+                        text = "Gastos bajo control",
                         color = Color.White,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -366,10 +367,10 @@ fun BudgetSection(
                 "Tu presupuesto por categoria",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
+                color = MaterialTheme.colorScheme.primary
             )
             IconButton(onClick = onEditClick) {
-                Icon(Icons.Default.Edit, contentDescription = "Editar presupuestos", tint = PurpuraPrimario)
+                Icon(Icons.Default.Edit, contentDescription = "Editar presupuestos", tint = MaterialTheme.colorScheme.primary)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -383,9 +384,9 @@ fun BudgetSection(
 fun BudgetBar(label: String, current: Float, total: Float) {
     val progress = if (total > 0) current / total else 0f
     val barColor = when {
-        progress >= 1.0f -> Color(0xFFF44336) // Rojo al 100%
-        progress >= 0.8f -> Color(0xFFFF9800) // Naranja al 80%
-        else -> PurpuraPrimario
+        progress >= 1.0f -> Color(0xFFF44336)
+        progress >= 0.8f -> Color(0xFFFF9800)
+        else -> MaterialTheme.colorScheme.primary
     }
 
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
@@ -393,8 +394,8 @@ fun BudgetBar(label: String, current: Float, total: Float) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(label, fontWeight = FontWeight.Bold, color = PurpuraSecundario)
-            Text("$$current de $$total", fontSize = 12.sp, color = PurpuraSecundario)
+            Text(label, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text("$$current de $$total", fontSize = 12.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
@@ -430,10 +431,10 @@ fun RecurrentExpensesSection(movimientos: List<MovimientoEntity>) {
                 "Gastos recurrentes",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario
+                color = MaterialTheme.colorScheme.primary
             )
             TextButton(onClick = { }) {
-                Text("Ver todos", color = PurpuraPrimario)
+                Text("Ver todos", color = MaterialTheme.colorScheme.primary)
             }
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -455,21 +456,21 @@ fun RecurrentItemCard(title: String, amount: String, date: String, icon: ImageVe
     Card(
         modifier = Modifier.width(160.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(PurpuraPrimario.copy(alpha = 0.1f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = PurpuraPrimario)
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(title, fontWeight = FontWeight.Bold, color = Black)
-            Text(amount, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Black)
-            Text(date, fontSize = 10.sp, color = GrayText)
+            Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(amount, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+            Text(date, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         }
     }
 }
@@ -484,7 +485,7 @@ fun SavingsGoalSection(
             "Metas de ahorro",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = PurpuraSecundario
+            color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(16.dp))
         metas.forEach { meta ->
@@ -501,7 +502,7 @@ fun SavingsGoalItem(
     Card(
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -520,13 +521,13 @@ fun SavingsGoalItem(
                         Icon(Icons.Default.Savings, contentDescription = null, tint = Color(0xFF4CAF50))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(meta.nombre, fontWeight = FontWeight.Bold, color = PurpuraSecundario, fontSize = 16.sp)
+                    Text(meta.nombre, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
                 }
                 IconButton(
                     onClick = { onAbonar(meta.id, 50.0) },
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = PurpuraPrimario.copy(alpha = 0.1f))
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Abonar $50", tint = PurpuraPrimario)
+                    Icon(Icons.Default.Add, contentDescription = "Abonar $50", tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -538,7 +539,7 @@ fun SavingsGoalItem(
                     text = "$${meta.montoActual} de $${meta.montoObjetivo}",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = PurpuraSecundario
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${(meta.montoActual / meta.montoObjetivo * 100).toInt()}%",

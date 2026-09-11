@@ -65,10 +65,10 @@ fun StatsScreen(viewModel: MovimientosViewModel) {
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = CremaFondo,
-                    titleContentColor = PurpuraSecundario,
-                    navigationIconContentColor = PurpuraSecundario,
-                    actionIconContentColor = PurpuraSecundario
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
@@ -91,7 +91,7 @@ fun StatsScreen(viewModel: MovimientosViewModel) {
                     "Distribucion de gastos",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PurpuraSecundario
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 DonutChart(movimientos)
@@ -106,7 +106,7 @@ fun StatsScreen(viewModel: MovimientosViewModel) {
                     "Tendencia de gastos",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PurpuraSecundario
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 TrendChart(movimientos)
@@ -117,7 +117,7 @@ fun StatsScreen(viewModel: MovimientosViewModel) {
                     "Lista de gastos",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PurpuraSecundario
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 ExpenseBarChart(movimientos)
@@ -134,7 +134,7 @@ fun TimeSelector(selected: String, onSelected: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
             .padding(4.dp)
     ) {
         listOf("Semanal", "Mensual", "Anual").forEach { tab ->
@@ -144,7 +144,7 @@ fun TimeSelector(selected: String, onSelected: (String) -> Unit) {
                     .weight(1f)
                     .fillMaxHeight()
                     .background(
-                        if (isSelected) PurpuraSecundario else Color.Transparent,
+                        if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                         RoundedCornerShape(20.dp)
                     )
                     .clickable { onSelected(tab) },
@@ -152,7 +152,7 @@ fun TimeSelector(selected: String, onSelected: (String) -> Unit) {
             ) {
                 Text(
                     text = tab,
-                    color = if (isSelected) Color.White else PurpuraSecundario.copy(alpha = 0.6f),
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                 )
             }
@@ -219,7 +219,7 @@ fun BudgetUsageSection(movimientos: List<MovimientoEntity>) {
             "Cantidad de presupuesto usado",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = PurpuraSecundario
+            color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -228,12 +228,12 @@ fun BudgetUsageSection(movimientos: List<MovimientoEntity>) {
                 modifier = Modifier
                     .width(200.dp)
                     .height(12.dp),
-                color = PurpuraSecundario,
-                trackColor = PurpuraSecundario.copy(alpha = 0.2f),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Text("${(porcentaje * 100).toInt()} %", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = PurpuraSecundario)
+            Text("${(porcentaje * 100).toInt()} %", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
@@ -261,7 +261,7 @@ fun TrendChart(movimientos: List<MovimientoEntity>) {
     Card(
         modifier = Modifier.fillMaxWidth().height(200.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(24.dp)) {
             val spaceX = size.width / (gastosPorDia.size.coerceAtLeast(2) - 1)
@@ -300,7 +300,7 @@ fun ExpenseBarChart(movimientos: List<MovimientoEntity>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             gastosPorCategoria.take(5).forEach { (catId, monto) ->
@@ -312,7 +312,7 @@ fun ExpenseBarChart(movimientos: List<MovimientoEntity>) {
             }
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomEnd) {
-                Text("Expandir", color = PurpuraSecundario, fontWeight = FontWeight.Bold)
+                Text("Expandir", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -321,14 +321,14 @@ fun ExpenseBarChart(movimientos: List<MovimientoEntity>) {
 @Composable
 fun ExpenseBarItem(label: String, progress: Float) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, modifier = Modifier.width(80.dp), fontSize = 12.sp, color = PurpuraSecundario)
+        Text(label, modifier = Modifier.width(80.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier
                 .weight(1f)
                 .height(24.dp),
-            color = PurpuraSecundario,
-            trackColor = Color.Transparent,
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Square
         )
     }

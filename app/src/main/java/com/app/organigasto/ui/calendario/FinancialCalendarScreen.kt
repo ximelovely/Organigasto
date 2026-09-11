@@ -46,16 +46,16 @@ fun FinancialCalendarScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Calendario", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
+                title = { Text("Calendario", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = PurpuraSecundario)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CremaFondo)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = CremaFondo
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             CalendarHeader(
@@ -77,7 +77,7 @@ fun FinancialCalendarScreen(
             Text(
                 text = "Movimientos del ${selectedDate.dayOfMonth} de ${selectedDate.month.getDisplayName(TextStyle.FULL, Locale("es", "ES"))}",
                 fontWeight = FontWeight.Bold,
-                color = PurpuraSecundario,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 16.sp
             )
             
@@ -111,18 +111,18 @@ fun CalendarHeader(currentMonth: YearMonth, onMonthChange: (YearMonth) -> Unit) 
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { onMonthChange(currentMonth.minusMonths(1)) }) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = PurpuraSecundario)
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         }
         
         Text(
             text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale("es", "ES")).uppercase()} ${currentMonth.year}",
             fontWeight = FontWeight.Black,
             fontSize = 18.sp,
-            color = PurpuraSecundario
+            color = MaterialTheme.colorScheme.primary
         )
         
         IconButton(onClick = { onMonthChange(currentMonth.plusMonths(1)) }) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = PurpuraSecundario)
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -176,7 +176,7 @@ fun CalendarGrid(
                                 .aspectRatio(1f)
                                 .padding(2.dp)
                                 .background(
-                                    if (isSelected) PurpuraPrimario else Color.White,
+                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { onDateSelected(date) },
@@ -185,14 +185,14 @@ fun CalendarGrid(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = dayNum.toString(),
-                                    color = if (isSelected) Color.White else PurpuraSecundario,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                                 if (hasMovements) {
                                     Box(
                                         modifier = Modifier
                                             .size(4.dp)
-                                            .background(if (isSelected) Color.White else PurpuraPrimario, CircleShape)
+                                            .background(if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary, CircleShape)
                                     )
                                 }
                             }
@@ -211,7 +211,7 @@ fun CalendarMovementItem(mov: MovimientoEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -232,8 +232,8 @@ fun CalendarMovementItem(mov: MovimientoEntity) {
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(mov.nota ?: "Sin nota", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PurpuraSecundario)
-                Text(mov.cuenta, fontSize = 10.sp, color = Color.Gray)
+                Text(mov.nota ?: "Sin nota", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(mov.cuenta, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(

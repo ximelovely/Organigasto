@@ -16,6 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
 
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Launch
+import androidx.compose.material.icons.filled.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TutorialScreen(
@@ -25,12 +29,10 @@ fun TutorialScreen(
     var step by remember { mutableStateOf(1) }
     var salario by remember { mutableStateOf("") }
     
-    // Estado de métodos de pago elegidos
     var efectivoSelected by remember { mutableStateOf(true) }
     var debitoSelected by remember { mutableStateOf(true) }
     var creditoSelected by remember { mutableStateOf(false) }
 
-    // Estado de suscripciones sugeridas
     var netflixSelected by remember { mutableStateOf(false) }
     var spotifySelected by remember { mutableStateOf(false) }
     var primeSelected by remember { mutableStateOf(false) }
@@ -38,7 +40,7 @@ fun TutorialScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Configuración Inicial 🚀", fontWeight = FontWeight.Bold) },
+                title = { Text("Configuración Inicial", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -133,20 +135,23 @@ fun TutorialScreen(
                             FilterChip(
                                 selected = efectivoSelected,
                                 onClick = { efectivoSelected = !efectivoSelected },
-                                label = { Text("💵 Efectivo Físico") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                label = { Text("Efectivo Físico") },
+                                leadingIcon = { Icon(Icons.Default.Payments, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
                             )
                             FilterChip(
                                 selected = debitoSelected,
                                 onClick = { debitoSelected = !debitoSelected },
-                                label = { Text("💳 Tarjeta de Débito / Nómina") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                label = { Text("Tarjeta de Débito / Nómina") },
+                                leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
                             )
                             FilterChip(
                                 selected = creditoSelected,
                                 onClick = { creditoSelected = !creditoSelected },
-                                label = { Text("🏦 Tarjeta de Crédito") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                label = { Text("Tarjeta de Crédito") },
+                                leadingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
                             )
                         }
                     }
@@ -169,20 +174,23 @@ fun TutorialScreen(
                             FilterChip(
                                 selected = netflixSelected,
                                 onClick = { netflixSelected = !netflixSelected },
-                                label = { Text("🎬 Netflix ($219.00/mes)") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                label = { Text("Netflix ($219.00/mes)") },
+                                leadingIcon = { Icon(Icons.Default.Movie, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
                             )
                             FilterChip(
                                 selected = spotifySelected,
                                 onClick = { spotifySelected = !spotifySelected },
-                                label = { Text("🎵 Spotify ($129.00/mes)") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                label = { Text("Spotify ($129.00/mes)") },
+                                leadingIcon = { Icon(Icons.Default.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
                             )
                             FilterChip(
                                 selected = primeSelected,
                                 onClick = { primeSelected = !primeSelected },
-                                label = { Text("📦 Amazon Prime ($99.00/mes)") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                label = { Text("Amazon Prime ($99.00/mes)") },
+                                leadingIcon = { Icon(Icons.Default.Inventory2, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
                             )
                         }
                     }
@@ -216,13 +224,13 @@ fun TutorialScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (step == 3) "Finalizar y Comenzar ✨" else "Siguiente paso",
+                        if (step == 3) "Finalizar y Comenzar" else "Siguiente paso",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
-                        imageVector = if (step == 3) Icons.Default.Check else Icons.Default.ArrowForward,
+                        imageVector = if (step == 3) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null
                     )
                 }

@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.sp
 import com.app.organigasto.ui.theme.PurpuraPrimario
 import com.app.organigasto.ui.theme.PurpuraSecundario
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
+
 @Composable
 fun WelcomeScreen(
     onLoginClick: () -> Unit,
@@ -33,11 +36,32 @@ fun WelcomeScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(120.dp)
                     .background(PurpuraPrimario, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "📁$", color = Color.White, fontSize = 28.sp)
+                Box(modifier = Modifier.size(64.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.White, CircleShape)
+                            .align(Alignment.BottomEnd),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$",
+                            color = PurpuraPrimario,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

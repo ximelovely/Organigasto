@@ -25,7 +25,7 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = Color.White,
     tertiary = PurpuraClaro,
     background = CremaFondo,
-    surface = White,
+    surface = Color.White,
     onBackground = PurpuraSecundario,
     onSurface = PurpuraSecundario,
 )

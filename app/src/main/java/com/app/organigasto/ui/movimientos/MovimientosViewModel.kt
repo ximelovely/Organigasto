@@ -159,6 +159,42 @@ class MovimientosViewModel(
         }
     }
 
+    fun transferir(
+        monto: Double,
+        cuentaOrigenId: Long,
+        cuentaOrigenNombre: String,
+        cuentaDestinoId: Long,
+        cuentaDestinoNombre: String,
+        fecha: LocalDate,
+        nota: String? = null
+    ) {
+        viewModelScope.launch {
+            // 1. Registro de salida en cuenta origen
+            val salida = MovimientoEntity(
+                tipo = TipoMovimiento.TRANSFERENCIA,
+                monto = monto,
+                categoriaId = 1, // ID generico o "Transferencia"
+                cuenta = cuentaOrigenNombre,
+                fecha = fecha,
+                nota = "Transferencia a $cuentaDestinoNombre${if (nota != null) ": $nota" else ""}"
+            )
+            movimientoDao.insertar(salida)
+            cuentaDao.ajustarSaldo(cuentaOrigenId, -monto)
+
+            // 2. Registro de entrada en cuenta destino
+            val entrada = MovimientoEntity(
+                tipo = TipoMovimiento.TRANSFERENCIA,
+                monto = monto,
+                categoriaId = 1,
+                cuenta = cuentaDestinoNombre,
+                fecha = fecha,
+                nota = "Transferencia desde $cuentaOrigenNombre${if (nota != null) ": $nota" else ""}"
+            )
+            movimientoDao.insertar(entrada)
+            cuentaDao.ajustarSaldo(cuentaDestinoId, monto)
+        }
+    }
+
     fun obtenerTasaCambio(moneda: String): Double {
         return when (moneda) {
             "USD" -> 19.50 // Mock

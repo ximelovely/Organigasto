@@ -30,16 +30,16 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Mis Suscripciones", fontWeight = FontWeight.Bold, color = PurpuraSecundario) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = CremaFondo)
+                title = { Text("Mis Suscripciones", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }, containerColor = PurpuraPrimario) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir", tint = Color.White)
+            FloatingActionButton(onClick = { showAddDialog = true }, containerColor = MaterialTheme.colorScheme.primary) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir", tint = MaterialTheme.colorScheme.onPrimary)
             }
         },
-        containerColor = CremaFondo
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
@@ -85,18 +85,18 @@ fun SuscripcionItem(suscripcion: SuscripcionEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(40.dp).background(PurpuraPrimario.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Subscriptions, contentDescription = null, tint = PurpuraPrimario)
+            Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Subscriptions, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(suscripcion.nombre, fontWeight = FontWeight.Bold, color = PurpuraSecundario)
-                Text("Próximo cobro: ${suscripcion.proximoPago}", fontSize = 11.sp, color = Color.Gray)
+                Text(suscripcion.nombre, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("Próximo cobro: ${suscripcion.proximoPago}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
-            Text("$${suscripcion.monto}", fontWeight = FontWeight.Black, color = PurpuraSecundario)
+            Text("$${suscripcion.monto}", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -108,11 +108,28 @@ fun AddSuscripcionDialog(onDismiss: () -> Unit, onConfirm: (String, Double) -> U
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nueva Suscripción", fontWeight = FontWeight.Bold) },
+        title = { Text("Nueva Suscripción", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+        containerColor = MaterialTheme.colorScheme.surface,
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
-                OutlinedTextField(value = monto, onValueChange = { monto = it }, label = { Text("Monto mensual") })
+                OutlinedTextField(
+                    value = nombre, 
+                    onValueChange = { nombre = it }, 
+                    label = { Text("Nombre") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                )
+                OutlinedTextField(
+                    value = monto, 
+                    onValueChange = { monto = it }, 
+                    label = { Text("Monto mensual") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                )
             }
         },
         confirmButton = {
