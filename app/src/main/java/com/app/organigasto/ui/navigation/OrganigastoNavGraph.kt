@@ -16,6 +16,7 @@ import com.app.organigasto.ui.main.MainScreen
 import com.app.organigasto.ui.presupuesto.BudgetManagementScreen
 import com.app.organigasto.ui.categorias.CategoryListScreen
 import com.app.organigasto.ui.categorias.AddCategoryScreen
+import com.app.organigasto.ui.calendario.FinancialCalendarScreen
 
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -86,6 +87,7 @@ fun OrganigastoNavGraph() {
             MainScreen(
                 onAddMovementClick = { navController.navigate(Screen.AddMovement.route) },
                 onBudgetEditClick = { navController.navigate(Screen.Budget.route) },
+                onCalendarClick = { navController.navigate(Screen.Calendar.route) }, // Añadido
                 movimientosViewModel = movimientosViewModel
             )
         }
@@ -111,6 +113,12 @@ fun OrganigastoNavGraph() {
         }
         composable(Screen.AddCategory.route) {
             AddCategoryScreen(
+                onBackClick = { navController.popBackStack() },
+                viewModel = movimientosViewModel
+            )
+        }
+        composable(Screen.Calendar.route) {
+            FinancialCalendarScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = movimientosViewModel
             )

@@ -39,10 +39,14 @@ fun AddMovementScreen(
     
     var selectedType by remember { mutableStateOf(TipoMovimiento.GASTO) }
     var amount by remember { mutableStateOf("") }
+    var selectedCurrency by remember { mutableStateOf("MXN") } // Añadido
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
-    var selectedCuentaId by remember { mutableStateOf<Long?>(null) } // Añadido
+    var selectedCuentaId by remember { mutableStateOf<Long?>(null) }
     var recurrencia by remember { mutableStateOf(Recurrencia.INDIVIDUAL) }
     var nota by remember { mutableStateOf("") }
+
+    val exchangeRate = viewModel.obtenerTasaCambio(selectedCurrency) // Añadido
+    val convertedAmount = (amount.toDoubleOrNull() ?: 0.0) * exchangeRate // Añadido
 
     Scaffold(
         topBar = {
@@ -79,6 +83,13 @@ fun AddMovementScreen(
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
+            
+            // Currency Selector
+            CurrencySelector(
+                selected = selectedCurrency,
+                onSelected = { selectedCurrency = it }
+            )
+
             OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) amount = it },
@@ -106,6 +117,16 @@ fun AddMovementScreen(
                     cursorColor = PurpuraPrimario
                 )
             )
+
+            if (selectedCurrency != "MXN") {
+                Text(
+                    text = "≈ $${String.format("%.2f", convertedAmount)} MXN",
+                    color = PurpuraPrimario,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -169,18 +190,21 @@ fun AddMovementScreen(
 
             Button(
                 onClick = {
-                    val montoDouble = amount.toDoubleOrNull() ?: 0.0
+                    val montoOriginalDouble = amount.toDoubleOrNull() ?: 0.0
                     val cuentaSeleccionada = cuentas.find { it.id == selectedCuentaId }
-                    if (montoDouble > 0 && selectedCategoryId != null && cuentaSeleccionada != null) {
+                    if (montoOriginalDouble > 0 && selectedCategoryId != null && cuentaSeleccionada != null) {
                         viewModel.agregarMovimiento(
                             tipo = selectedType,
-                            monto = montoDouble,
+                            monto = convertedAmount, // Guardar el monto convertido a MXN
                             categoriaId = selectedCategoryId!!,
                             cuentaId = cuentaSeleccionada.id,
                             cuentaNombre = cuentaSeleccionada.nombre,
                             fecha = LocalDate.now(),
                             recurrencia = recurrencia,
-                            nota = if (nota.isEmpty()) null else nota
+                            nota = if (nota.isEmpty()) null else nota,
+                            moneda = selectedCurrency,
+                            montoOriginal = montoOriginalDouble,
+                            tasaCambio = exchangeRate
                         )
                         onBackClick()
                     }
@@ -195,6 +219,37 @@ fun AddMovementScreen(
             }
             
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun CurrencySelector(selected: String, onSelected: (String) -> Unit) {
+    val currencies = listOf("MXN", "USD", "EUR", "GBP")
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        currencies.forEach { currency ->
+            val isSelected = selected == currency
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .background(
+                        if (isSelected) PurpuraSecundario else Color.LightGray.copy(alpha = 0.2f),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onSelected(currency) }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = currency,
+                    color = if (isSelected) Color.White else PurpuraSecundario,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

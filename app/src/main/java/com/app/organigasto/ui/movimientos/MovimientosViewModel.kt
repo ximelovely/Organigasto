@@ -85,6 +85,11 @@ class MovimientosViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val movimientosPorDia: StateFlow<Map<LocalDate, List<MovimientoEntity>>> = movimientoDao
+        .obtenerTodos()
+        .map { lista -> lista.groupBy { it.fecha } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val balanceTotal: StateFlow<Double> = movimientosFiltrados.map { lista ->
         lista.sumOf { if (it.tipo == TipoMovimiento.INGRESO) it.monto else -it.monto }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
@@ -124,11 +129,14 @@ class MovimientosViewModel(
         tipo: TipoMovimiento,
         monto: Double,
         categoriaId: Long,
-        cuentaId: Long, // Cambiado de String a Long
-        cuentaNombre: String, // Mantener para el registro visual por ahora
+        cuentaId: Long,
+        cuentaNombre: String,
         fecha: LocalDate,
         recurrencia: Recurrencia,
-        nota: String? = null
+        nota: String? = null,
+        moneda: String = "MXN",
+        montoOriginal: Double = 0.0,
+        tasaCambio: Double = 1.0
     ) {
         viewModelScope.launch {
             val nuevo = MovimientoEntity(
@@ -138,13 +146,25 @@ class MovimientosViewModel(
                 cuenta = cuentaNombre,
                 fecha = fecha,
                 recurrencia = recurrencia,
-                nota = nota
+                nota = nota,
+                moneda = moneda,
+                montoOriginal = montoOriginal,
+                tasaCambio = tasaCambio
             )
             movimientoDao.insertar(nuevo)
             
             // Ajustar el saldo de la cuenta
             val ajuste = if (tipo == TipoMovimiento.INGRESO) monto else -monto
             cuentaDao.ajustarSaldo(cuentaId, ajuste)
+        }
+    }
+
+    fun obtenerTasaCambio(moneda: String): Double {
+        return when (moneda) {
+            "USD" -> 19.50 // Mock
+            "EUR" -> 21.20 // Mock
+            "GBP" -> 25.40 // Mock
+            else -> 1.0
         }
     }
 

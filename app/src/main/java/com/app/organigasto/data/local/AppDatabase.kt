@@ -16,7 +16,7 @@ import com.app.organigasto.data.local.entity.*
         SuscripcionEntity::class,
         DeudaEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

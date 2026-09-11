@@ -34,7 +34,8 @@ import com.app.organigasto.domain.model.TipoMovimiento
 @Composable
 fun HomeScreen(
     onAddMovementClick: () -> Unit,
-    onBudgetEditClick: () -> Unit, // Añadido
+    onBudgetEditClick: () -> Unit,
+    onCalendarClick: () -> Unit, // Añadido
     viewModel: MovimientosViewModel
 ) {
     val movimientos by viewModel.movimientosFiltrados.collectAsState()
@@ -47,7 +48,7 @@ fun HomeScreen(
     val metasAhorro by viewModel.metasAhorro.collectAsState() // Añadido
 
     Scaffold(
-        topBar = { HomeTopBar() },
+        topBar = { HomeTopBar(onCalendarClick) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddMovementClick,
@@ -163,11 +164,20 @@ fun MovementItem(movimiento: MovimientoEntity, onDelete: () -> Unit) {
                 Text(movimiento.cuenta, fontWeight = FontWeight.Bold)
                 Text(movimiento.fecha.toString(), fontSize = 12.sp, color = Color.Gray)
             }
-            Text(
-                text = "${if (movimiento.tipo == TipoMovimiento.INGRESO) "+" else "-"}$${movimiento.monto}",
-                color = if (movimiento.tipo == TipoMovimiento.INGRESO) Color(0xFF4CAF50) else Color(0xFFF44336),
-                fontWeight = FontWeight.Bold
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${if (movimiento.tipo == TipoMovimiento.INGRESO) "+" else "-"}$${movimiento.monto}",
+                    color = if (movimiento.tipo == TipoMovimiento.INGRESO) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    fontWeight = FontWeight.Bold
+                )
+                if (movimiento.moneda != "MXN") {
+                    Text(
+                        text = "(${movimiento.montoOriginal} ${movimiento.moneda})",
+                        fontSize = 9.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Gray)
             }
@@ -259,7 +269,7 @@ fun CustomSearchBar(query: String, onQueryChange: (String) -> Unit) {
 }
     @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar() {
+fun HomeTopBar(onCalendarClick: () -> Unit) { // Añadido callback
     CenterAlignedTopAppBar(
         title = {
             Text(
@@ -274,6 +284,9 @@ fun HomeTopBar() {
             }
         },
         actions = {
+            IconButton(onClick = onCalendarClick) { // Cambiado
+                Icon(Icons.Default.CalendarMonth, contentDescription = "Calendario", tint = PurpuraSecundario)
+            }
             IconButton(onClick = { }) {
                 Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = PurpuraSecundario)
             }

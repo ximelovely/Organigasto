@@ -28,7 +28,8 @@ import com.app.organigasto.ui.theme.PurpuraSecundario
 @Composable
 fun MainScreen(
     onAddMovementClick: () -> Unit,
-    onBudgetEditClick: () -> Unit, // Añadido
+    onBudgetEditClick: () -> Unit,
+    onCalendarClick: () -> Unit, // Añadido
     movimientosViewModel: MovimientosViewModel
 ) {
     val navController = rememberNavController()
@@ -46,7 +47,8 @@ fun MainScreen(
             composable(Screen.Main.Home.route) {
                 HomeScreen(
                     onAddMovementClick = onAddMovementClick,
-                    onBudgetEditClick = onBudgetEditClick, // Pasado
+                    onBudgetEditClick = onBudgetEditClick,
+                    onCalendarClick = onCalendarClick, // Pasado
                     viewModel = movimientosViewModel
                 )
             }

@@ -27,5 +27,8 @@ data class MovimientoEntity(
     val fecha: LocalDate,
     val recurrencia: Recurrencia = Recurrencia.INDIVIDUAL,
     val nota: String? = null,
-    val imagenReciboPath: String? = null
+    val imagenReciboPath: String? = null,
+    val moneda: String = "MXN",        // Moneda original: "USD", "EUR", etc.
+    val montoOriginal: Double = 0.0,  // Monto en la moneda original
+    val tasaCambio: Double = 1.0      // Tasa aplicada para llegar al monto local
 )
