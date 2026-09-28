@@ -4,9 +4,8 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.app.organigasto.OrganigastoApp
-import com.app.organigasto.domain.model.Recurrencia
-import com.app.organigasto.domain.model.TipoMovimiento
-import com.app.organigasto.data.local.entity.MovimientoEntity
+import com.app.organigasto.data.local.entity.CobroSuscripcion
+import com.app.organigasto.data.local.entity.Gasto
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
@@ -17,36 +16,47 @@ class RecurrentMovementWorker(
 
     override suspend fun doWork(): Result {
         val database = (applicationContext as OrganigastoApp).database
-        val movimientoDao = database.movimientoDao()
-        val cuentaDao = database.cuentaDao()
-
         val hoy = LocalDate.now()
-        val movimientos = movimientoDao.obtenerTodos().first()
+        
+        // Procesar Suscripciones
+        val suscripciones = database.suscripcionDao().observarPorUsuario(1, "ACTIVA").first()
 
-        movimientos.filter { it.recurrencia != Recurrencia.INDIVIDUAL }.forEach { mov ->
-            // Si la fecha actual es igual o posterior a la fecha programada
-            if (!hoy.isBefore(mov.fecha)) {
-                // 1. Crear el movimiento real (transacción puntual)
-                val transaccionReal = mov.copy(
-                    id = 0, 
-                    fecha = mov.fecha, 
-                    recurrencia = Recurrencia.INDIVIDUAL,
-                    nota = "[Auto] ${mov.nota ?: "Recurrente"}"
-                )
-                movimientoDao.insertar(transaccionReal)
+        suscripciones.forEach { sub ->
+            try {
+                val proximoPago = LocalDate.parse(sub.fechaProximoCobro)
+                if (!hoy.isBefore(proximoPago)) {
+                    // 1. Generar cobro en el historial de suscripción
+                    database.cobroSuscripcionDao().insertar(
+                        CobroSuscripcion(
+                            suscripcionId = sub.id,
+                            fecha = sub.fechaProximoCobro,
+                            monto = sub.costo,
+                            estado = "COBRADO"
+                        )
+                    )
+                    
+                    // 2. Generar Gasto real para el Organigasto
+                    database.gastoDao().insertar(
+                        Gasto(
+                            usuarioId = sub.usuarioId,
+                            categoriaId = sub.categoriaId ?: 0,
+                            monto = sub.costo,
+                            fecha = sub.fechaProximoCobro,
+                            descripcion = "[Suscripción] ${sub.nombre}"
+                        )
+                    )
 
-                // 2. Actualizar el saldo de la cuenta
-                val ajuste = if (mov.tipo == TipoMovimiento.INGRESO) mov.monto else -mov.monto
-                cuentaDao.ajustarSaldo(mov.cuentaId, ajuste)
-
-                // 3. Programar la PRÓXIMA fecha en el movimiento "maestro"
-                val proximaFecha = when (mov.recurrencia) {
-                    Recurrencia.SEMANAL -> mov.fecha.plusWeeks(1)
-                    Recurrencia.QUINCENAL -> mov.fecha.plusWeeks(2)
-                    Recurrencia.MENSUAL -> mov.fecha.plusMonths(1)
-                    else -> mov.fecha
+                    // 3. Programar la PRÓXIMA fecha
+                    val nuevaFecha = when (sub.frecuencia) {
+                        "MENSUAL" -> proximoPago.plusMonths(1)
+                        "ANUAL" -> proximoPago.plusYears(1)
+                        else -> proximoPago.plusMonths(1)
+                    }.toString()
+                    
+                    database.suscripcionDao().actualizar(sub.copy(fechaProximoCobro = nuevaFecha))
                 }
-                movimientoDao.actualizar(mov.copy(fecha = proximaFecha))
+            } catch (e: Exception) {
+                // Error al parsear fecha o procesar
             }
         }
 

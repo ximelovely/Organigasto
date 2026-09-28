@@ -5,26 +5,37 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.app.organigasto.ui.theme.PurpuraPrimario
-import com.app.organigasto.ui.movimientos.MovimientosViewModel
-import com.app.organigasto.domain.model.TipoMovimiento
-import com.app.organigasto.domain.model.Recurrencia
-import com.app.organigasto.data.local.entity.CategoriaEntity
+import com.app.organigasto.data.local.entity.Categoria
+import com.app.organigasto.domain.model.TipoPrestamo
+import com.app.organigasto.domain.utils.LoanCalculator
+import com.app.organigasto.ui.categorias.CategoryIconView
+import com.app.organigasto.ui.categorias.parseCategoryColor
+import com.app.organigasto.ui.components.AnimatedFinanceBackground
+import com.app.organigasto.ui.theme.*
 import java.time.LocalDate
+import java.time.format.TextStyle as SystemTextStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,274 +44,569 @@ fun AddMovementScreen(
     viewModel: MovimientosViewModel
 ) {
     val categorias by viewModel.categorias.collectAsState()
-    val cuentas by viewModel.cuentas.collectAsState()
-    
-    var selectedType by remember { mutableStateOf(TipoMovimiento.GASTO) }
+
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Gasto Rápido, 1: Deuda / Préstamo
+
+    // Campos de Gasto
     var amount by remember { mutableStateOf("") }
-    var selectedCurrency by remember { mutableStateOf("MXN") }
-    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
-    var selectedCuentaId by remember { mutableStateOf<Long?>(null) }
-    var selectedCuentaDestinoId by remember { mutableStateOf<Long?>(null) }
-    var recurrencia by remember { mutableStateOf(Recurrencia.INDIVIDUAL) }
-    var nota by remember { mutableStateOf("") }
+    var selectedCategoryId by remember { mutableStateOf<Int?>(null) }
+    var descripcion by remember { mutableStateOf("") }
+    var cuentaPago by remember { mutableStateOf("Débito") }
 
-    val exchangeRate = viewModel.obtenerTasaCambio(selectedCurrency)
-    val convertedAmount = (amount.toDoubleOrNull() ?: 0.0) * exchangeRate
+    // Campos de Deuda / Préstamo
+    var tipoCompromiso by remember { mutableStateOf("DEUDA") } // "DEUDA" vs "PRÉSTAMO"
+    var loanNombre by remember { mutableStateOf("") }
+    var loanAmount by remember { mutableStateOf("") }
+    var loanMeses by remember { mutableStateOf("12") }
+    var loanDiaPago by remember { mutableStateOf("15") }
+    var loanTasa by remember { mutableStateOf("0") }
 
+    val catMap = remember(categorias) { categorias.associateBy { it.id } }
     val scrollState = rememberScrollState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Nuevo movimiento", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Type Selector
-                TypeSegmentedControl(
-                    selected = selectedType,
-                    onSelected = { 
-                        selectedType = it 
-                        selectedCategoryId = null 
-                    }
-                )
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        AnimatedFinanceBackground(modifier = Modifier.fillMaxSize())
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text(
-                    text = "Monto",
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                
-                // Currency Selector
-                CurrencySelector(
-                    selected = selectedCurrency,
-                    onSelected = { selectedCurrency = it }
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (amount.isEmpty()) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
                         Text(
-                            "0.00", 
-                            fontSize = 64.sp, 
-                            fontWeight = FontWeight.Black, 
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        ) 
-                    }
-                    androidx.compose.foundation.text.BasicTextField(
-                        value = amount,
-                        onValueChange = { 
-                            if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) amount = it 
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 64.sp, 
-                            fontWeight = FontWeight.Black, 
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                        singleLine = true
-                    )
-                }
-
-                if (selectedCurrency != "MXN") {
-                    Text(
-                        text = "≈ $${String.format("%.2f", convertedAmount)} MXN",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Categories or Destination Account
-                if (selectedType == TipoMovimiento.TRANSFERENCIA) {
-                    Text(
-                        "Cuenta Destino",
-                        modifier = Modifier.fillMaxWidth(),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    AccountSelector(
-                        cuentas = cuentas.filter { it.id != selectedCuentaId },
-                        selectedId = selectedCuentaDestinoId,
-                        onSelected = { selectedCuentaDestinoId = it },
-                        label = "Seleccionar cuenta destino"
-                    )
-                } else {
-                    val filteredCategories = categorias.filter { it.tipo == null || it.tipo == selectedType }
-                    if (filteredCategories.isNotEmpty()) {
-                        Text(
-                            "Categoria",
-                            modifier = Modifier.fillMaxWidth(),
+                            text = if (selectedTab == 0) "Registrar Gasto" else "Registrar Deuda",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        CategoryGrid(
-                            categorias = filteredCategories,
-                            selectedId = selectedCategoryId,
-                            onSelected = { selectedCategoryId = it }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Atrás",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            },
+            containerColor = Color.Transparent
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                // Main Tab Bar
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.Transparent,
+                    contentColor = PurpuraPrimario,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = PurpuraPrimario
+                        )
+                    },
+                    divider = {}
+                ) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        selectedContentColor = PurpuraPrimario,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            "GASTO RÁPIDO",
+                            modifier = Modifier.padding(16.dp),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        selectedContentColor = PurpuraPrimario,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            "REGISTRAR DEUDA",
+                            modifier = Modifier.padding(16.dp),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                // Recurrence
-                if (selectedType != TipoMovimiento.TRANSFERENCIA) {
-                    Text(
-                        "Recurrencia",
-                        modifier = Modifier.fillMaxWidth(),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    RecurrenceSelector(
-                        current = recurrencia,
-                        onSelected = { recurrencia = it }
-                    )
+                    if (selectedTab == 0) {
+                        // -------------------------------------------------------------
+                        // TAB 0: GASTO RÁPIDO
+                        // -------------------------------------------------------------
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "¿CUÁNTO GASTASTE?",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    letterSpacing = 1.sp
+                                )
 
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                // Account and Date
-                Text(
-                    if (selectedType == TipoMovimiento.TRANSFERENCIA) "Cuenta Origen" else "Cuenta/Tarjeta",
-                    modifier = Modifier.fillMaxWidth(),
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                AccountSelector(
-                    cuentas = cuentas,
-                    selectedId = selectedCuentaId,
-                    onSelected = { selectedCuentaId = it },
-                    label = "Seleccionar cuenta"
-                )
+                                BasicTextField(
+                                    value = amount,
+                                    onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) amount = it },
+                                    textStyle = TextStyle(
+                                        fontSize = 44.sp,
+                                        fontWeight = FontWeight.Black,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    decorationBox = { innerTextField ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Text("$", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = PurpuraPrimario)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            if (amount.isEmpty()) {
+                                                Text(
+                                                    "0.00",
+                                                    fontSize = 44.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                    }
+                                )
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                Column {
-                    Text("Fecha", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(LocalDate.now().toString(), color = MaterialTheme.colorScheme.onSurface)
-                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        // Payment Method Selector (Método de Pago)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Text(
+                                    "MÉTODO / CUENTA DE PAGO",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    letterSpacing = 0.5.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        "Débito" to "💳 Débito",
+                                        "Efectivo" to "💵 Efectivo",
+                                        "Crédito" to "💳 Crédito"
+                                    ).forEach { (key, label) ->
+                                        val isSelected = cuentaPago == key
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { cuentaPago = key },
+                                            label = { Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                                            modifier = Modifier.weight(1f).height(44.dp),
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = PurpuraPrimario,
+                                                selectedLabelColor = Color.White
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Text(
+                                    "SELECCIONA EL SOBRE AFECTADO",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    letterSpacing = 0.5.sp
+                                )
+
+                                CategoryList(
+                                    categorias = categorias,
+                                    selectedId = selectedCategoryId,
+                                    onSelected = { selectedCategoryId = it }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Text(
+                                    "DETALLES (OPCIONAL)",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    letterSpacing = 0.5.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                OutlinedTextField(
+                                    value = descripcion,
+                                    onValueChange = { descripcion = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text("Ej: Cena, Supermercado, Uber") },
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PurpuraPrimario,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+                        }
+
+                    } else {
+                        // -------------------------------------------------------------
+                        // TAB 1: REGISTRAR DEUDA
+                        // -------------------------------------------------------------
+
+                        // Form Inputs Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = loanNombre,
+                                    onValueChange = { loanNombre = it },
+                                    label = { Text("Concepto o Titular") },
+                                    placeholder = { Text("Ej: Tarjeta de Crédito, Muebles, Casa") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PurpuraPrimario,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+
+                                OutlinedTextField(
+                                    value = loanAmount,
+                                    onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) loanAmount = it },
+                                    label = { Text("Monto Total ($)") },
+                                    prefix = { Text("$ ", color = PurpuraPrimario, fontWeight = FontWeight.Bold) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PurpuraPrimario,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = loanMeses,
+                                        onValueChange = { loanMeses = it },
+                                        label = { Text("Plazo (meses)") },
+                                        placeholder = { Text("1") },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = PurpuraPrimario,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+
+                                    OutlinedTextField(
+                                        value = loanDiaPago,
+                                        onValueChange = { if (it.isEmpty() || (it.toIntOrNull() in 1..31)) loanDiaPago = it },
+                                        label = { Text("Día de Pago (1-31)") },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = PurpuraPrimario,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                }
+
+                                OutlinedTextField(
+                                    value = loanTasa,
+                                    onValueChange = { loanTasa = it },
+                                    label = { Text("Tasa de Interés Anual (%)") },
+                                    placeholder = { Text("0") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PurpuraPrimario,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Target Envelope Selection
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Text(
+                                    "INCLUIR PAGO EN ESTE SOBRE",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    letterSpacing = 0.5.sp
+                                )
+
+                                Text(
+                                    "El pago mensual calculado se descontará del sobre que elijas.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                                )
+
+                                CategoryList(
+                                    categorias = categorias,
+                                    selectedId = selectedCategoryId,
+                                    onSelected = { selectedCategoryId = it }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Live Calculation Preview Card with Expiry Month Calculation
+                        val mTotal = loanAmount.toDoubleOrNull() ?: 0.0
+                        val nMeses = (loanMeses.toIntOrNull() ?: 1).coerceAtLeast(1)
+                        val tTasa = loanTasa.toDoubleOrNull() ?: 0.0
+                        val dDia = (loanDiaPago.toIntOrNull() ?: 15).coerceIn(1, 31)
+
+                        if (mTotal > 0) {
+                            val tipoLoan = if (tTasa > 0) TipoPrestamo.CON_INTERES else TipoPrestamo.SIN_INTERESES
+                            val resumenLoan = LoanCalculator.calcularPrestamo(mTotal, nMeses, tipoLoan, tTasa)
+                            val targetCat = selectedCategoryId?.let { catMap[it] }
+
+                            val startToday = LocalDate.now()
+                            val expiryDate = startToday.plusMonths(nMeses.toLong())
+                            val expiryMonthName = expiryDate.month.getDisplayName(SystemTextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercase() }
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(28.dp),
+                                colors = CardDefaults.cardColors(containerColor = PurpuraSecundario),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        "PAGO MENSUAL CALCULADO",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        letterSpacing = 1.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        "$${String.format(Locale.US, "%.2f", resumenLoan.pagoMensual)} / mes",
+                                        fontSize = 32.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        "Se pagará el día $dDia de cada mes",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+
+                                    Text(
+                                        "Vencimiento final: $expiryMonthName ${expiryDate.year} (en $nMeses mes${if (nMeses != 1) "es" else ""})",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+
+                                    if (targetCat != null) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        val catColor = parseCategoryColor(targetCat.colorHex)
+
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = Color.White.copy(alpha = 0.15f)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier.size(20.dp).background(catColor, CircleShape),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CategoryIconView(
+                                                        iconoNombre = targetCat.iconoNombre,
+                                                        iconoUri = targetCat.iconoUri,
+                                                        size = 12.dp
+                                                    )
+                                                }
+                                                Text(
+                                                    "Anotado en sobre: ${targetCat.nombre}",
+                                                    color = Color.White,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(28.dp))
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Recibo
-                Text(
-                    "Recibo / Factura",
-                    modifier = Modifier.fillMaxWidth(),
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { /* TODO: Abrir Cámara/Galería */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.PhotoCamera, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Adjuntar foto del ticket")
+                // Bottom Action Button
+                val isFormValid = if (selectedTab == 0) {
+                    (amount.toDoubleOrNull() ?: 0.0) > 0 && selectedCategoryId != null
+                } else {
+                    (loanAmount.toDoubleOrNull() ?: 0.0) > 0 && (loanMeses.toIntOrNull() ?: 0) > 0 && loanNombre.isNotBlank()
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
-            // Fixed Button at bottom
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
                 Button(
                     onClick = {
-                        val montoOriginalDouble = amount.toDoubleOrNull() ?: 0.0
-                        val cuentaSeleccionada = cuentas.find { it.id == selectedCuentaId }
-                        
-                        if (selectedType == TipoMovimiento.TRANSFERENCIA) {
-                            val cuentaDestino = cuentas.find { it.id == selectedCuentaDestinoId }
-                            if (montoOriginalDouble > 0 && cuentaSeleccionada != null && cuentaDestino != null) {
-                                viewModel.transferir(
-                                    monto = convertedAmount,
-                                    cuentaOrigenId = cuentaSeleccionada.id,
-                                    cuentaOrigenNombre = cuentaSeleccionada.nombre,
-                                    cuentaDestinoId = cuentaDestino.id,
-                                    cuentaDestinoNombre = cuentaDestino.nombre,
-                                    fecha = LocalDate.now(),
-                                    nota = if (nota.isEmpty()) null else nota
+                        if (selectedTab == 0) {
+                            val monto = amount.toDoubleOrNull() ?: 0.0
+                            if (monto > 0 && selectedCategoryId != null) {
+                                viewModel.agregarGasto(
+                                    monto = monto,
+                                    categoriaId = selectedCategoryId!!,
+                                    descripcion = descripcion,
+                                    cuentaPago = cuentaPago
                                 )
                                 onBackClick()
                             }
                         } else {
-                            if (montoOriginalDouble > 0 && selectedCategoryId != null && cuentaSeleccionada != null) {
-                                viewModel.agregarMovimiento(
-                                    tipo = selectedType,
-                                    monto = convertedAmount,
-                                    categoriaId = selectedCategoryId!!,
-                                    cuentaId = cuentaSeleccionada.id,
-                                    cuentaNombre = cuentaSeleccionada.nombre,
-                                    fecha = LocalDate.now(),
-                                    recurrencia = recurrencia,
-                                    nota = if (nota.isEmpty()) null else nota,
-                                    moneda = selectedCurrency,
-                                    montoOriginal = montoOriginalDouble,
-                                    tasaCambio = exchangeRate
+                            val monto = loanAmount.toDoubleOrNull() ?: 0.0
+                            val meses = (loanMeses.toIntOrNull() ?: 1).coerceAtLeast(1)
+                            val tasa = loanTasa.toDoubleOrNull() ?: 0.0
+                            val dia = (loanDiaPago.toIntOrNull() ?: 15).coerceIn(1, 31)
+
+                            val expiryDate = LocalDate.now().plusMonths(meses.toLong()).toString()
+
+                            if (monto > 0 && loanNombre.isNotBlank()) {
+                                viewModel.registrarPrestamo(
+                                    nombre = loanNombre,
+                                    monto = monto,
+                                    meses = meses,
+                                    tasa = tasa,
+                                    categoriaId = selectedCategoryId,
+                                    diaPagoMensual = dia,
+                                    tipoCompromiso = tipoCompromiso,
+                                    fechaVencimiento = expiryDate
                                 )
                                 onBackClick()
                             }
                         }
                     },
+                    enabled = isFormValid,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PurpuraPrimario,
+                        contentColor = Color.White
+                    )
                 ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (selectedType == TipoMovimiento.TRANSFERENCIA) "Realizar transferencia" else "Guardar movimiento", 
-                        fontSize = 16.sp, 
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        text = if (selectedTab == 0) "GUARDAR GASTO" else if (tipoCompromiso == "DEUDA") "GUARDAR DEUDA" else "CREAR PRÉSTAMO",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -309,267 +615,64 @@ fun AddMovementScreen(
 }
 
 @Composable
-fun CurrencySelector(selected: String, onSelected: (String) -> Unit) {
-    val currencies = listOf("MXN", "USD", "EUR", "GBP")
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+fun CategoryList(categorias: List<Categoria>, selectedId: Int?, onSelected: (Int) -> Unit) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.padding(top = 10.dp)
     ) {
-        currencies.forEach { currency ->
-            val isSelected = selected == currency
-            Box(
+        categorias.forEach { cat ->
+            val isSelected = selectedId == cat.id
+            val catColor = parseCategoryColor(cat.colorHex)
+
+            Surface(
                 modifier = Modifier
-                    .padding(horizontal = 4.dp)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                        RoundedCornerShape(8.dp)
-                    )
-                    .clickable { onSelected(currency) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { onSelected(cat.id) },
+                shape = RoundedCornerShape(18.dp),
+                color = if (isSelected) catColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
+                border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, catColor) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                shadowElevation = if (isSelected) 0.dp else 1.dp
             ) {
-                Text(
-                    text = currency,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(catColor, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CategoryIconView(
+                            iconoNombre = cat.iconoNombre,
+                            iconoUri = cat.iconoUri,
+                            tint = Color.White,
+                            size = 20.dp
+                        )
+                    }
 
-@Composable
-fun TypeSegmentedControl(selected: TipoMovimiento, onSelected: (TipoMovimiento) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
-            .padding(4.dp)
-    ) {
-        TipoMovimiento.entries.forEach { type ->
-            val isSelected = selected == type
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        RoundedCornerShape(20.dp)
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Text(
+                        cat.nombre,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = if (isSelected) catColor else MaterialTheme.colorScheme.onSurface
                     )
-                    .clickable { onSelected(type) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = type.name.lowercase().replaceFirstChar { it.uppercase() },
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
-            }
-        }
-    }
-}
 
-@Composable
-fun CategoryGrid(categorias: List<CategoriaEntity>, selectedId: Long?, onSelected: (Long) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        categorias.take(3).forEach { cat ->
-            val icon = when (cat.icono) {
-                "restaurant" -> Icons.Default.Restaurant
-                "directions_car" -> Icons.Default.DirectionsCar
-                "home" -> Icons.Default.Home
-                "payments" -> Icons.Default.Payments
-                "shopping_bag" -> Icons.Default.ShoppingBag
-                "redeem" -> Icons.Default.Redeem
-                else -> Icons.Default.Category
-            }
-            CategoryItem(
-                name = cat.nombre,
-                icon = icon,
-                isSelected = selectedId == cat.id,
-                onClick = { onSelected(cat.id) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
+                    Spacer(modifier = Modifier.weight(1f))
 
-@Composable
-fun AccountSelector(
-    cuentas: List<com.app.organigasto.data.local.entity.CuentaEntity>,
-    selectedId: Long?,
-    onSelected: (Long) -> Unit,
-    label: String
-) {
-    var showDialog by remember { mutableStateOf(false) }
-    val cuenta = cuentas.find { it.id == selectedId }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .clickable { showDialog = true },
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                text = cuenta?.nombre ?: label,
-                color = if (cuenta != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        }
-    }
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(label, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(28.dp),
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    cuentas.forEach { c ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSelected(c.id)
-                                    showDialog = false
-                                },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (selectedId == c.id) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = c.nombre, 
-                                        fontWeight = FontWeight.Bold, 
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1
-                                    )
-                                    Text(
-                                        text = c.tipo, 
-                                        fontSize = 11.sp, 
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                }
-                                Text(
-                                    text = "$${String.format("%.2f", c.saldoActual)}", 
-                                    fontWeight = FontWeight.Black, 
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 16.sp
-                                )
-                            }
-                        }
+                    if (isSelected) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = catColor,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Cerrar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
-}
-
-@Composable
-fun RecurrenceSelector(current: Recurrencia, onSelected: (Recurrencia) -> Unit) {
-    val isRecurrent = current != Recurrencia.INDIVIDUAL
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .padding(12.dp)
-    ) {
-        Column {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RecurrenceButton("Individual", !isRecurrent, { onSelected(Recurrencia.INDIVIDUAL) }, Modifier.weight(1f))
-                RecurrenceButton("Recurrente", isRecurrent, { onSelected(Recurrencia.MENSUAL) }, Modifier.weight(1f))
-            }
-            if (isRecurrent) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    RecurrenceSubButton("Semanal", current == Recurrencia.SEMANAL) { onSelected(Recurrencia.SEMANAL) }
-                    RecurrenceSubButton("Quincenal", current == Recurrencia.QUINCENAL) { onSelected(Recurrencia.QUINCENAL) }
-                    RecurrenceSubButton("Mensual", current == Recurrencia.MENSUAL) { onSelected(Recurrencia.MENSUAL) }
-                }
             }
         }
-    }
-}
-
-@Composable
-fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    val bgColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    
-    Card(
-        modifier = modifier
-            .height(80.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon, 
-                contentDescription = null, 
-                tint = contentColor,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(name, fontSize = 11.sp, color = contentColor, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun RecurrenceButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    Box(
-        modifier = modifier
-            .height(40.dp)
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                RoundedCornerShape(8.dp)
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-    }
-}
-
-@Composable
-fun RecurrenceSubButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .width(80.dp)
-            .height(30.dp)
-            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent, RoundedCornerShape(8.dp))
-            .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 12.sp)
     }
 }

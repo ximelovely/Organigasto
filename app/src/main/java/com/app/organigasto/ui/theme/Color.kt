@@ -2,10 +2,14 @@ package com.app.organigasto.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val CremaFondo = Color(0xFFF9F7EF)
+val CremaFondo = Color(0xFFFCFBF9) // Más cálido
 val PurpuraPrimario = Color(0xFF8B7BB8)
 val PurpuraSecundario = Color(0xFF3F3363)
-val PurpuraClaro = Color(0xFFC7BEE0)
+val PurpuraClaro = Color(0xFFE6DDF8) // Lila pastel del diagrama
+
+val VerdeExito = Color(0xFF4CAF50)
+val RojoError = Color(0xFFF44336)
+val NaranjaAlerta = Color(0xFFFF9800)
 
 val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)

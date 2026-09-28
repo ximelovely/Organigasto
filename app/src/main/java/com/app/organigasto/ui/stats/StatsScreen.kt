@@ -2,14 +2,14 @@ package com.app.organigasto.ui.stats
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,181 +17,203 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.app.organigasto.ui.theme.PurpuraPrimario
-import com.app.organigasto.ui.theme.PurpuraSecundario
-import com.app.organigasto.ui.theme.GrayText
-import com.app.organigasto.ui.theme.CremaFondo
-
+import com.app.organigasto.data.local.entity.Gasto
+import com.app.organigasto.ui.categorias.CategoryIconView
+import com.app.organigasto.ui.categorias.parseCategoryColor
+import com.app.organigasto.ui.components.AnimatedFinanceBackground
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
-import com.app.organigasto.data.local.entity.MovimientoEntity
-import com.app.organigasto.domain.model.TipoMovimiento
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import com.app.organigasto.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(viewModel: MovimientosViewModel) {
     val filtro by viewModel.filtroTiempo.collectAsState()
-    val movimientos by viewModel.movimientosFiltrados.collectAsState()
+    val gastos by viewModel.gastos.collectAsState()
+    val categorias by viewModel.categorias.collectAsState()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Estadísticas",
-                        fontWeight = FontWeight.Bold,
-                        color = PurpuraSecundario
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = null, tint = PurpuraSecundario)
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        AnimatedFinanceBackground(modifier = Modifier.fillMaxSize())
+
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            "Análisis y Estadísticas",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { }) {
+                            Icon(
+                                Icons.Default.Analytics,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            },
+            containerColor = Color.Transparent
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                item {
+                    TimeSelector(filtro) { viewModel.setFiltro(it) }
+                }
+
+                // Distribution Card
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "Distribución por Sobres",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            DonutChart(gastos = gastos, categorias = categorias)
+                        }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { 
-                        viewModel.exportarDatosACsv()
-                    }) {
-                        Icon(Icons.Default.Share, contentDescription = "Exportar CSV", tint = PurpuraSecundario)
+                }
+
+                // Trend Card
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
+                        ) {
+                            Text(
+                                "Tendencia de Gastos",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            TrendChart(gastos)
+                        }
                     }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.Settings, contentDescription = null, tint = PurpuraSecundario)
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        },
-        containerColor = CremaFondo
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            item {
-                TimeSelector(filtro) { viewModel.setFiltro(it) }
-            }
+                }
 
-            item {
-                Text(
-                    "Distribucion de gastos",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                DonutChart(movimientos)
+                item { Spacer(modifier = Modifier.height(32.dp)) }
             }
-
-            item {
-                BudgetUsageSection(movimientos)
-            }
-
-            item {
-                Text(
-                    "Tendencia de gastos",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                TrendChart(movimientos)
-            }
-
-            item {
-                Text(
-                    "Lista de gastos",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                ExpenseBarChart(movimientos)
-            }
-
-            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
     }
 }
 
 @Composable
 fun TimeSelector(selected: String, onSelected: (String) -> Unit) {
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
-            .padding(4.dp)
+            .height(50.dp),
+        shape = RoundedCornerShape(25.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp
     ) {
-        listOf("Semanal", "Mensual", "Anual").forEach { tab ->
-            val isSelected = selected == tab
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        RoundedCornerShape(20.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp)
+        ) {
+            listOf("Mensual", "Anual").forEach { tab ->
+                val isSelected = selected == tab
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(
+                            if (isSelected) PurpuraPrimario else Color.Transparent,
+                            RoundedCornerShape(21.dp)
+                        )
+                        .clickable { onSelected(tab) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = tab,
+                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 14.sp
                     )
-                    .clickable { onSelected(tab) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = tab,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
+                }
             }
         }
     }
 }
 
 @Composable
-fun DonutChart(movimientos: List<MovimientoEntity>) {
-    val gastosPorCategoria = movimientos
-        .filter { it.tipo == TipoMovimiento.GASTO }
-        .groupBy { it.categoriaId }
-        .mapValues { it.value.sumOf { m -> m.monto } }
-    
+fun DonutChart(gastos: List<Gasto>, categorias: List<com.app.organigasto.data.local.entity.Categoria>) {
+    val gastosPorCategoria = gastos.groupBy { it.categoriaId }.mapValues { it.value.sumOf { g -> g.monto } }
     val totalGastos = gastosPorCategoria.values.sum()
-    
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp)) {
-        Canvas(modifier = Modifier.size(200.dp)) {
-            val strokeWidth = 50f
-            var startAngle = -90f
-            
-            if (totalGastos == 0.0) {
-                drawArc(
-                    color = Color.LightGray.copy(alpha = 0.3f),
-                    startAngle = 0f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    style = Stroke(width = strokeWidth),
-                    size = Size(size.width - strokeWidth, size.height - strokeWidth),
-                    topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
-                )
-            } else {
-                val colors = listOf(PurpuraSecundario, PurpuraPrimario, Color(0xFF4C8C7E), Color(0xFFE0E0E0))
-                var colorIndex = 0
-                
-                gastosPorCategoria.forEach { (_, monto) ->
+
+    val catMap = remember(categorias) { categorias.associateBy { it.id } }
+
+    if (totalGastos == 0.0) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+        ) {
+            Text(
+                "Aún no hay gastos registrados en este período",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                fontSize = 13.sp
+            )
+        }
+        return
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp)) {
+            Canvas(modifier = Modifier.size(200.dp)) {
+                val strokeWidth = 36f
+                var startAngle = -90f
+
+                gastosPorCategoria.forEach { (catId, monto) ->
+                    val cat = catMap[catId]
+                    val catColor = parseCategoryColor(cat?.colorHex)
                     val sweepAngle = (monto / totalGastos).toFloat() * 360f
+
                     drawArc(
-                        color = colors[colorIndex % colors.size],
+                        color = catColor,
                         startAngle = startAngle,
                         sweepAngle = sweepAngle,
                         useCenter = false,
@@ -200,7 +222,84 @@ fun DonutChart(movimientos: List<MovimientoEntity>) {
                         topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
                     )
                     startAngle += sweepAngle
-                    colorIndex++
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "TOTAL",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                Text(
+                    "$${String.format(java.util.Locale.US, "%.0f", totalGastos)}",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PurpuraPrimario
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Category Legend Breakdown
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            gastosPorCategoria.entries.sortedByDescending { it.value }.forEach { (catId, monto) ->
+                val cat = catMap[catId]
+                val catColor = parseCategoryColor(cat?.colorHex)
+                val porcentaje = (monto / totalGastos) * 100
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(catColor, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CategoryIconView(
+                                iconoNombre = cat?.iconoNombre,
+                                iconoUri = cat?.iconoUri,
+                                tint = Color.White,
+                                size = 18.dp
+                            )
+                        }
+                        Text(
+                            cat?.nombre ?: "General",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "${String.format(java.util.Locale.US, "%.1f", porcentaje)}%",
+                            fontSize = 12.sp,
+                            color = catColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "$${String.format(java.util.Locale.US, "%.2f", monto)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
@@ -208,128 +307,70 @@ fun DonutChart(movimientos: List<MovimientoEntity>) {
 }
 
 @Composable
-fun BudgetUsageSection(movimientos: List<MovimientoEntity>) {
-    val totalIngresos = movimientos.filter { it.tipo == TipoMovimiento.INGRESO }.sumOf { it.monto }
-    val totalGastos = movimientos.filter { it.tipo == TipoMovimiento.GASTO }.sumOf { it.monto }
-    
-    val porcentaje = if (totalIngresos > 0) (totalGastos / totalIngresos).toFloat().coerceIn(0f, 1f) else 0f
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            "Cantidad de presupuesto usado",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LinearProgressIndicator(
-                progress = { porcentaje },
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(12.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text("${(porcentaje * 100).toInt()} %", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        }
-    }
-}
-
-@Composable
-fun TrendChart(movimientos: List<MovimientoEntity>) {
-    val gastosPorDia = movimientos
-        .filter { it.tipo == TipoMovimiento.GASTO }
-        .groupBy { it.fecha }
-        .mapValues { it.value.sumOf { m -> m.monto } }
-        .toList()
-        .sortedBy { it.first }
-
+fun TrendChart(gastos: List<Gasto>) {
+    val gastosPorDia = gastos.groupBy { it.fecha }.mapValues { it.value.sumOf { g -> g.monto } }.toList().sortedBy { it.first }
     if (gastosPorDia.isEmpty()) {
-        Card(modifier = Modifier.fillMaxWidth().height(150.dp), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Text("No hay suficientes datos", color = Color.Gray)
-            }
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+        ) {
+            Text("Aún no hay datos para mostrar tendencia", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), fontSize = 13.sp)
         }
         return
     }
 
     val maxGasto = gastosPorDia.maxOf { it.second }.toFloat().coerceAtLeast(1f)
 
-    Card(
-        modifier = Modifier.fillMaxWidth().height(200.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            val spaceX = size.width / (gastosPorDia.size.coerceAtLeast(2) - 1)
-            val points = gastosPorDia.mapIndexed { index, (_, monto) ->
-                Offset(index * spaceX, size.height - (monto.toFloat() / maxGasto * size.height))
-            }
-
-            for (i in 0 until points.size - 1) {
-                drawLine(
-                    color = PurpuraPrimario,
-                    start = points[i],
-                    end = points[i + 1],
-                    strokeWidth = 8f,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-            }
-            
-            points.forEach { point ->
-                drawCircle(color = PurpuraSecundario, radius = 6f, center = point)
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpenseBarChart(movimientos: List<MovimientoEntity>) {
-    val gastosPorCategoria = movimientos
-        .filter { it.tipo == TipoMovimiento.GASTO }
-        .groupBy { it.categoriaId }
-        .mapValues { it.value.sumOf { m -> m.monto } }
-        .toList()
-        .sortedByDescending { it.second }
-
-    val maxGasto = gastosPorCategoria.firstOrNull()?.second ?: 1.0
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            gastosPorCategoria.take(5).forEach { (catId, monto) ->
-                ExpenseBarItem("Cat #$catId", (monto / maxGasto).toFloat())
-            }
-            
-            if (gastosPorCategoria.isEmpty()) {
-                Text("No hay gastos registrados", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            }
-
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomEnd) {
-                Text("Expandir", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpenseBarItem(label: String, progress: Float) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, modifier = Modifier.width(80.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-        LinearProgressIndicator(
-            progress = { progress },
+    Column {
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .height(24.dp),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-            strokeCap = androidx.compose.ui.graphics.StrokeCap.Square
-        )
+                .fillMaxWidth()
+                .height(180.dp)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val spaceX = size.width / (gastosPorDia.size.coerceAtLeast(2) - 1)
+                val points = gastosPorDia.mapIndexed { index, (_, monto) ->
+                    Offset(
+                        x = index * spaceX,
+                        y = size.height - (monto.toFloat() / maxGasto * (size.height - 20f)) - 10f
+                    )
+                }
+
+                // Fill area gradient
+                if (points.size >= 2) {
+                    val path = Path().apply {
+                        moveTo(points.first().x, size.height)
+                        points.forEach { lineTo(it.x, it.y) }
+                        lineTo(points.last().x, size.height)
+                        close()
+                    }
+                    drawPath(
+                        path = path,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(PurpuraPrimario.copy(alpha = 0.3f), PurpuraPrimario.copy(alpha = 0.0f))
+                        )
+                    )
+                }
+
+                // Line
+                for (i in 0 until points.size - 1) {
+                    drawLine(
+                        color = PurpuraPrimario,
+                        start = points[i],
+                        end = points[i + 1],
+                        strokeWidth = 6f,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
+                }
+
+                // Points
+                points.forEach { point ->
+                    drawCircle(color = PurpuraSecundario, radius = 5f, center = point)
+                    drawCircle(color = Color.White, radius = 2.5f, center = point)
+                }
+            }
+        }
     }
 }

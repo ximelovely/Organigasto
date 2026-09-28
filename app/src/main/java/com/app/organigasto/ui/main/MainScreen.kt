@@ -29,6 +29,7 @@ import com.app.organigasto.ui.theme.PurpuraSecundario
 fun MainScreen(
     onAddMovementClick: () -> Unit,
     onBudgetEditClick: () -> Unit,
+    onAddCategoryClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onAccountClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -50,6 +51,7 @@ fun MainScreen(
                 HomeScreen(
                     onAddMovementClick = onAddMovementClick,
                     onBudgetEditClick = onBudgetEditClick,
+                    onAddCategoryClick = onAddCategoryClick,
                     onCalendarClick = onCalendarClick,
                     onAccountClick = onAccountClick,
                     onSettingsClick = onSettingsClick,
@@ -63,7 +65,10 @@ fun MainScreen(
                 SuscripcionesScreen(viewModel = movimientosViewModel)
             }
             composable(Screen.Main.Loans.route) {
-                DeudasScreen(viewModel = movimientosViewModel)
+                DeudasScreen(
+                    viewModel = movimientosViewModel,
+                    onAddDebtClick = onAddMovementClick
+                )
             }
         }
     }

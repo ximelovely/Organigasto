@@ -3,20 +3,24 @@ package com.app.organigasto.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.app.organigasto.data.local.dao.UserDao
-import com.app.organigasto.data.local.entity.UserEntity
+import com.app.organigasto.data.local.dao.UsuarioDao
+import com.app.organigasto.data.local.dao.CategoriaDao
+import com.app.organigasto.data.local.entity.Categoria
+import com.app.organigasto.data.local.entity.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 import com.app.organigasto.data.local.PreferenceManager
 
 class AuthViewModel(
-    private val userDao: UserDao,
+    private val usuarioDao: UsuarioDao,
+    private val categoriaDao: CategoriaDao,
     private val preferenceManager: PreferenceManager
 ) : ViewModel() {
-    private val _isLoggedIn = MutableStateFlow(false)
+    private val _isLoggedIn = MutableStateFlow(preferenceManager.currentUserId != -1)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     private val _authError = MutableStateFlow<String?>(null)
@@ -27,13 +31,15 @@ class AuthViewModel(
 
     fun login(email: String, pass: String) {
         viewModelScope.launch {
-            val user = userDao.getUserByEmail(email)
-            if (user != null && user.password == pass) {
+            val user = usuarioDao.buscarPorCorreo(email)
+            // En la ER v3 se usa passwordHash y salt, por ahora simplificamos la validación
+            if (user != null && user.passwordHash == pass) { 
                 _isLoggedIn.value = true
                 _authError.value = null
                 preferenceManager.hasLoggedInOnce = true
                 preferenceManager.userEmail = email
-                preferenceManager.userName = user.name
+                preferenceManager.userName = user.nombre
+                preferenceManager.currentUserId = user.id
             } else {
                 _authError.value = "Correo o contraseña incorrectos"
             }
@@ -46,21 +52,24 @@ class AuthViewModel(
     
     fun logout() {
         _isLoggedIn.value = false
+        preferenceManager.currentUserId = -1
     }
 
     fun register(name: String, email: String, pass: String) {
         viewModelScope.launch {
-            val exists = userDao.checkUserExists(email) > 0
+            val exists = usuarioDao.buscarPorCorreo(email) != null
             if (exists) {
                 _authError.value = "El usuario ya existe"
             } else {
-                val newUser = UserEntity(name = name, email = email, password = pass)
-                userDao.insert(newUser)
+                val newUser = Usuario(nombre = name, correo = email, passwordHash = pass, salt = "salt_placeholder")
+                val id = usuarioDao.insertar(newUser).toInt()
+
                 _isLoggedIn.value = true
                 _authError.value = null
                 preferenceManager.hasLoggedInOnce = true
                 preferenceManager.userEmail = email
                 preferenceManager.userName = name
+                preferenceManager.currentUserId = id
             }
         }
     }
@@ -71,13 +80,14 @@ class AuthViewModel(
 }
 
 class AuthViewModelFactory(
-    private val userDao: UserDao,
+    private val usuarioDao: UsuarioDao,
+    private val categoriaDao: CategoriaDao,
     private val preferenceManager: PreferenceManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AuthViewModel(userDao, preferenceManager) as T
+            return AuthViewModel(usuarioDao, categoriaDao, preferenceManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

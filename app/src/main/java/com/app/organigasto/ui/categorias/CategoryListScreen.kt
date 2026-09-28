@@ -17,11 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.app.organigasto.ui.theme.PurpuraPrimario
-import com.app.organigasto.ui.theme.PurpuraSecundario
-import com.app.organigasto.ui.theme.CremaFondo
+import com.app.organigasto.data.local.entity.Categoria
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
-import com.app.organigasto.data.local.entity.CategoriaEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +32,7 @@ fun CategoryListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Categorías", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                title = { Text("Categorías (Sobres)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MaterialTheme.colorScheme.primary)
@@ -63,7 +60,7 @@ fun CategoryListScreen(
             items(categorias) { categoria ->
                 CategoryListItem(
                     categoria = categoria,
-                    onDelete = { viewModel.eliminarCategoria(categoria) }
+                    onDelete = { viewModel.eliminarCategoria(categoria.id) }
                 )
             }
             
@@ -73,7 +70,9 @@ fun CategoryListScreen(
 }
 
 @Composable
-fun CategoryListItem(categoria: CategoriaEntity, onDelete: () -> Unit) {
+fun CategoryListItem(categoria: Categoria, onDelete: () -> Unit) {
+    val categoryColor = parseCategoryColor(categoria.colorHex)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -84,23 +83,18 @@ fun CategoryListItem(categoria: CategoriaEntity, onDelete: () -> Unit) {
             modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val icon = when (categoria.icono) {
-                "restaurant" -> Icons.Default.Restaurant
-                "directions_car" -> Icons.Default.DirectionsCar
-                "home" -> Icons.Default.Home
-                "movie" -> Icons.Default.Movie
-                "shopping_cart" -> Icons.Default.ShoppingCart
-                "health_and_safety" -> Icons.Default.HealthAndSafety
-                else -> Icons.Default.Category
-            }
-            
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                    .background(categoryColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                CategoryIconView(
+                    iconoNombre = categoria.iconoNombre,
+                    iconoUri = categoria.iconoUri,
+                    tint = Color.White,
+                    size = 24.dp
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -112,13 +106,6 @@ fun CategoryListItem(categoria: CategoriaEntity, onDelete: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 17.sp
                 )
-                if (categoria.presupuestoMensual > 0) {
-                    Text(
-                        text = "Presupuesto: $${categoria.presupuestoMensual}",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
             }
 
             IconButton(

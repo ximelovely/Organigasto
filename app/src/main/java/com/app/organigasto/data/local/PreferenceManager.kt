@@ -22,6 +22,24 @@ class PreferenceManager(context: Context) {
         get() = prefs.getString("user_name", null)
         set(value) = prefs.edit().putString("user_name", value).apply()
 
+    var currentUserId: Int
+        get() {
+            val id = prefs.getInt("current_user_id", 1)
+            return if (id > 0) id else 1
+        }
+        set(value) {
+            val validId = if (value > 0) value else 1
+            prefs.edit().putInt("current_user_id", validId).apply()
+        }
+
+    fun isTutorialCompleted(userId: Int): Boolean {
+        return prefs.getBoolean("tutorial_completed_$userId", false)
+    }
+
+    fun setTutorialCompleted(userId: Int, completed: Boolean) {
+        prefs.edit().putBoolean("tutorial_completed_$userId", completed).apply()
+    }
+
     var themeMode: Int // 0: System, 1: Light, 2: Dark
         get() = prefs.getInt("theme_mode", 0)
         set(value) = prefs.edit().putInt("theme_mode", value).apply()
