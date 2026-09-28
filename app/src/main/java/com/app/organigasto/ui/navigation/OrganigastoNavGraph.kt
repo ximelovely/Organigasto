@@ -76,9 +76,17 @@ fun OrganigastoNavGraph(onThemeChange: (Int) -> Unit) {
             LaunchedEffect(isLoggedIn) {
                 if (isLoggedIn) {
                     val userId = preferenceManager.currentUserId
-                    val target = if (preferenceManager.isTutorialCompleted(userId)) Screen.Main.route else Screen.Tutorial.route
-                    navController.navigate(target) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    val isBiometricOn = preferenceManager.isBiometricEnabled
+
+                    if (isBiometricOn) {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
+                    } else {
+                        val target = if (preferenceManager.isTutorialCompleted(userId)) Screen.Main.route else Screen.Tutorial.route
+                        navController.navigate(target) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
                     }
                 }
             }

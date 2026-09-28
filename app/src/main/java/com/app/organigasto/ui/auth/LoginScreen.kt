@@ -51,7 +51,7 @@ fun LoginScreen(
     
     // Auto-biometric on start if enabled
     LaunchedEffect(Unit) {
-        if (isBiometricEnabled && hasLoggedInOnce) {
+        if (isBiometricEnabled) {
             (context as? MainActivity)?.showBiometricPrompt {
                 onLoginSuccess()
             }

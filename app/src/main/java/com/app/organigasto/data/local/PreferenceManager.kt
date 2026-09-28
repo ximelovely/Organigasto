@@ -14,6 +14,10 @@ class PreferenceManager(context: Context) {
         get() = prefs.getBoolean("has_logged_in", false)
         set(value) = prefs.edit().putBoolean("has_logged_in", value).apply()
 
+    var isLoggedInSession: Boolean
+        get() = prefs.getBoolean("is_logged_in_session", false)
+        set(value) = prefs.edit().putBoolean("is_logged_in_session", value).apply()
+
     var userEmail: String?
         get() = prefs.getString("user_email", null)
         set(value) = prefs.edit().putString("user_email", value).apply()

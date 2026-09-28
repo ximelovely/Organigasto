@@ -20,7 +20,7 @@ class AuthViewModel(
     private val categoriaDao: CategoriaDao,
     private val preferenceManager: PreferenceManager
 ) : ViewModel() {
-    private val _isLoggedIn = MutableStateFlow(preferenceManager.currentUserId != -1)
+    private val _isLoggedIn = MutableStateFlow(preferenceManager.isLoggedInSession)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     private val _authError = MutableStateFlow<String?>(null)
@@ -32,8 +32,8 @@ class AuthViewModel(
     fun login(email: String, pass: String) {
         viewModelScope.launch {
             val user = usuarioDao.buscarPorCorreo(email)
-            // En la ER v3 se usa passwordHash y salt, por ahora simplificamos la validación
             if (user != null && user.passwordHash == pass) { 
+                preferenceManager.isLoggedInSession = true
                 _isLoggedIn.value = true
                 _authError.value = null
                 preferenceManager.hasLoggedInOnce = true
@@ -51,6 +51,7 @@ class AuthViewModel(
     }
     
     fun logout() {
+        preferenceManager.isLoggedInSession = false
         _isLoggedIn.value = false
         preferenceManager.currentUserId = -1
     }
@@ -64,6 +65,7 @@ class AuthViewModel(
                 val newUser = Usuario(nombre = name, correo = email, passwordHash = pass, salt = "salt_placeholder")
                 val id = usuarioDao.insertar(newUser).toInt()
 
+                preferenceManager.isLoggedInSession = true
                 _isLoggedIn.value = true
                 _authError.value = null
                 preferenceManager.hasLoggedInOnce = true
