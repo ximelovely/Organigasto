@@ -27,6 +27,8 @@ import com.app.organigasto.ui.movimientos.MovimientosViewModel
 import com.app.organigasto.ui.theme.*
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -403,7 +405,10 @@ fun AddSuscripcionDialog(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
                         listOf("SEMANAL" to "Semanal", "QUINCENAL" to "Quincenal", "MENSUAL" to "Mensual")
                             .forEach { (value, label) ->
                                 FilterChip(
@@ -612,7 +617,10 @@ fun EditSuscripcionDialog(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
                         listOf("SEMANAL" to "Semanal", "QUINCENAL" to "Quincenal", "MENSUAL" to "Mensual")
                             .forEach { (value, label) ->
                                 FilterChip(
