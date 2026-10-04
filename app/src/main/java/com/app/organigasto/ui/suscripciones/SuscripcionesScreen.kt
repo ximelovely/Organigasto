@@ -25,6 +25,8 @@ import com.app.organigasto.ui.categorias.parseCategoryColor
 import com.app.organigasto.ui.components.AnimatedFinanceBackground
 import com.app.organigasto.ui.movimientos.MovimientosViewModel
 import com.app.organigasto.ui.theme.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -295,6 +297,8 @@ fun AddSuscripcionDialog(
     var frecuencia by remember { mutableStateOf("MENSUAL") }
 
     var fecha by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     var esAutomatica by remember { mutableStateOf(true) }
     var activarRecordatorio by remember { mutableStateOf(true) }
@@ -388,14 +392,49 @@ fun AddSuscripcionDialog(
                     }
                 }
 
-                OutlinedTextField(
-                    value = fecha,
-                    onValueChange = { fecha = it },
-                    label = { Text("Próximo cobro (AAAA-MM-DD)") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }
+                ) {
+                    OutlinedTextField(
+                        value = fecha,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Próximo cobro") },
+                        trailingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Elegir fecha") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (showDatePicker) {
+                    val fechaActual = runCatching { java.time.LocalDate.parse(fecha) }
+                        .getOrDefault(java.time.LocalDate.now())
+
+                    DisposableEffect(Unit) {
+                        val dialog = android.app.DatePickerDialog(
+                            context,
+                            { _, year, month, day ->
+                                fecha = java.time.LocalDate.of(year, month + 1, day).toString()
+                                showDatePicker = false
+                            },
+                            fechaActual.year,
+                            fechaActual.monthValue - 1,
+                            fechaActual.dayOfMonth
+                        )
+                        dialog.setOnCancelListener { showDatePicker = false }
+                        dialog.show()
+                        onDispose { dialog.dismiss() }
+                    }
+                }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
