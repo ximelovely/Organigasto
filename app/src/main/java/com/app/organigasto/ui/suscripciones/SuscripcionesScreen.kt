@@ -34,6 +34,7 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
     val suscripciones by viewModel.suscripciones.collectAsState()
     val categorias by viewModel.categorias.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingSuscripcion by remember { mutableStateOf<Suscripcion?>(null) }
 
     val catMap = remember(categorias) { categorias.associateBy { it.id } }
 
@@ -131,7 +132,8 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
                             categoriaColorHex = cat?.colorHex,
                             categoriaIconoNombre = cat?.iconoNombre,
                             categoriaIconoUri = cat?.iconoUri,
-                            onDelete = { viewModel.eliminarSuscripcion(suscripcion.id) }
+                            onDelete = { viewModel.eliminarSuscripcion(suscripcion.id) },
+                            onEdit = { editingSuscripcion = suscripcion }
                         )
                     }
                 }
@@ -155,6 +157,17 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
                             diasAviso = dias
                         )
                         showAddDialog = false
+                    }
+                )
+            }
+            editingSuscripcion?.let { sub ->
+                EditSuscripcionDialog(
+                    suscripcion = sub,
+                    categorias = categorias,
+                    onDismiss = { editingSuscripcion = null },
+                    onConfirm = { actualizada ->
+                        viewModel.actualizarSuscripcion(actualizada)
+                        editingSuscripcion = null
                     }
                 )
             }
@@ -211,7 +224,8 @@ fun SuscripcionItem(
     categoriaColorHex: String?,
     categoriaIconoNombre: String?,
     categoriaIconoUri: String?,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val itemColor = parseCategoryColor(categoriaColorHex, PurpuraPrimario)
 
@@ -255,27 +269,36 @@ fun SuscripcionItem(
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
                     "$${String.format(java.util.Locale.US, "%.0f", suscripcion.costo)}",
                     fontWeight = FontWeight.ExtraBold,
                     color = itemColor,
                     fontSize = 18.sp
                 )
-
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Eliminar",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        modifier = Modifier.size(18.dp)
-                    )
+                Row {
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Editar",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Eliminar",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
@@ -486,6 +509,217 @@ fun AddSuscripcionDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
             ) {
                 Text("GUARDAR", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("CANCELAR") }
+        }
+    )
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditSuscripcionDialog(
+    suscripcion: Suscripcion,
+    categorias: List<com.app.organigasto.data.local.entity.Categoria>,
+    onDismiss: () -> Unit,
+    onConfirm: (Suscripcion) -> Unit
+) {
+    var nombre by remember { mutableStateOf(suscripcion.nombre) }
+    var monto by remember { mutableStateOf(suscripcion.costo.toString()) }
+    var selectedCatId by remember { mutableStateOf(suscripcion.categoriaId) }
+    var catMenuExpanded by remember { mutableStateOf(false) }
+
+    var frecuencia by remember { mutableStateOf(suscripcion.frecuencia) }
+
+    var fecha by remember { mutableStateOf(suscripcion.fechaProximoCobro) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    var esAutomatica by remember { mutableStateOf(suscripcion.esAutomatica) }
+    var activarRecordatorio by remember { mutableStateOf(suscripcion.activarRecordatorio) }
+    var diasAviso by remember { mutableStateOf(suscripcion.diasAviso.toString()) }
+
+    val selectedCatNombre = categorias.find { it.id == selectedCatId }?.nombre ?: "Sin categoría"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Editar Suscripción",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre del servicio") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = monto,
+                    onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) monto = it },
+                    label = { Text("Costo mensual") },
+                    prefix = { Text("$ ") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = catMenuExpanded,
+                    onExpandedChange = { catMenuExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCatNombre,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Categoría") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = catMenuExpanded) },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = catMenuExpanded,
+                        onDismissRequest = { catMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sin categoría") },
+                            onClick = { selectedCatId = null; catMenuExpanded = false }
+                        )
+                        categorias.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat.nombre) },
+                                onClick = { selectedCatId = cat.id; catMenuExpanded = false }
+                            )
+                        }
+                    }
+                }
+
+                Column {
+                    Text(
+                        "Frecuencia",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("SEMANAL" to "Semanal", "QUINCENAL" to "Quincenal", "MENSUAL" to "Mensual")
+                            .forEach { (value, label) ->
+                                FilterChip(
+                                    selected = frecuencia == value,
+                                    onClick = { frecuencia = value },
+                                    label = { Text(label) }
+                                )
+                            }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }
+                ) {
+                    OutlinedTextField(
+                        value = fecha,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Próximo cobro") },
+                        trailingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Elegir fecha") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (showDatePicker) {
+                    val fechaActual = runCatching { java.time.LocalDate.parse(fecha) }
+                        .getOrDefault(java.time.LocalDate.now())
+
+                    DisposableEffect(Unit) {
+                        val dialog = android.app.DatePickerDialog(
+                            context,
+                            { _, year, month, day ->
+                                fecha = java.time.LocalDate.of(year, month + 1, day).toString()
+                                showDatePicker = false
+                            },
+                            fechaActual.year,
+                            fechaActual.monthValue - 1,
+                            fechaActual.dayOfMonth
+                        )
+                        dialog.setOnCancelListener { showDatePicker = false }
+                        dialog.show()
+                        onDispose { dialog.dismiss() }
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cobro automático", modifier = Modifier.weight(1f))
+                    Switch(checked = esAutomatica, onCheckedChange = { esAutomatica = it })
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Activar recordatorio", modifier = Modifier.weight(1f))
+                    Switch(checked = activarRecordatorio, onCheckedChange = { activarRecordatorio = it })
+                }
+
+                if (activarRecordatorio) {
+                    OutlinedTextField(
+                        value = diasAviso,
+                        onValueChange = { if (it.isEmpty() || it.toIntOrNull() != null) diasAviso = it },
+                        label = { Text("Días de aviso antes del cobro") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (nombre.isNotBlank()) {
+                        onConfirm(
+                            suscripcion.copy(
+                                nombre = nombre,
+                                costo = monto.toDoubleOrNull() ?: suscripcion.costo,
+                                categoriaId = selectedCatId,
+                                frecuencia = frecuencia,
+                                fechaProximoCobro = fecha,
+                                esAutomatica = esAutomatica,
+                                activarRecordatorio = activarRecordatorio,
+                                diasAviso = diasAviso.toIntOrNull() ?: suscripcion.diasAviso
+                            )
+                        )
+                    }
+                },
+                enabled = nombre.isNotBlank(),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PurpuraPrimario)
+            ) {
+                Text("GUARDAR CAMBIOS", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

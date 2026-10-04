@@ -625,6 +625,16 @@ class MovimientosViewModel(
         }
     }
 
+    fun actualizarSuscripcion(suscripcion: Suscripcion) {
+        viewModelScope.launch {
+            try {
+                suscripcionDao.actualizar(suscripcion)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun inicializarSueldoTutorial(
         monto: Double,
         frecuencia: TipoPeriodo = TipoPeriodo.MENSUAL,
