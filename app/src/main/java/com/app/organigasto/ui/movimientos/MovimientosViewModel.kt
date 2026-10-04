@@ -580,23 +580,31 @@ class MovimientosViewModel(
         }
     }
 
-    fun agregarSuscripcion(nombre: String, costo: Double, frecuencia: String = "MENSUAL") {
+    fun agregarSuscripcion(
+        nombre: String,
+        costo: Double,
+        categoriaId: Int? = null,
+        frecuencia: String = "MENSUAL",
+        fechaProximoCobro: String = LocalDate.now().toString(),
+        esAutomatica: Boolean = true,
+        activarRecordatorio: Boolean = true,
+        diasAviso: Int = 1
+    ) {
         viewModelScope.launch {
             try {
                 ensureUserExists()
-                val hoy = LocalDate.now().toString()
                 suscripcionDao.insertar(
                     Suscripcion(
                         usuarioId = currentUserId,
-                        categoriaId = null,
+                        categoriaId = categoriaId,
                         nombre = nombre,
                         costo = costo,
-                        fechaProximoCobro = hoy,
-                        esAutomatica = true,
+                        fechaProximoCobro = fechaProximoCobro,
+                        esAutomatica = esAutomatica,
                         frecuencia = frecuencia,
                         estado = "ACTIVA",
-                        activarRecordatorio = true,
-                        diasAviso = 1
+                        activarRecordatorio = activarRecordatorio,
+                        diasAviso = diasAviso
                     )
                 )
             } catch (e: Exception) {

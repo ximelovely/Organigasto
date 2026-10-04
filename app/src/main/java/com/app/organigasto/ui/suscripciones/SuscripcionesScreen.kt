@@ -141,8 +141,17 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
                 AddSuscripcionDialog(
                     categorias = categorias,
                     onDismiss = { showAddDialog = false },
-                    onConfirm = { nombre, monto, catId ->
-                        viewModel.agregarSuscripcion(nombre, monto)
+                    onConfirm = { nombre, monto, catId, frecuencia, fecha, automatica, recordatorio, dias ->
+                        viewModel.agregarSuscripcion(
+                            nombre = nombre,
+                            costo = monto,
+                            categoriaId = catId,
+                            frecuencia = frecuencia,
+                            fechaProximoCobro = fecha,
+                            esAutomatica = automatica,
+                            activarRecordatorio = recordatorio,
+                            diasAviso = dias
+                        )
                         showAddDialog = false
                     }
                 )
@@ -276,11 +285,22 @@ fun SuscripcionItem(
 fun AddSuscripcionDialog(
     categorias: List<com.app.organigasto.data.local.entity.Categoria>,
     onDismiss: () -> Unit,
-    onConfirm: (String, Double, Int?) -> Unit
+    onConfirm: (String, Double, Int?, String, String, Boolean, Boolean, Int) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var monto by remember { mutableStateOf("") }
     var selectedCatId by remember { mutableStateOf<Int?>(categorias.firstOrNull()?.id) }
+    var catMenuExpanded by remember { mutableStateOf(false) }
+
+    var frecuencia by remember { mutableStateOf("MENSUAL") }
+
+    var fecha by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+
+    var esAutomatica by remember { mutableStateOf(true) }
+    var activarRecordatorio by remember { mutableStateOf(true) }
+    var diasAviso by remember { mutableStateOf("1") }
+
+    val selectedCatNombre = categorias.find { it.id == selectedCatId }?.nombre ?: "Sin categoría"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -315,13 +335,111 @@ fun AddSuscripcionDialog(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // Selector de categoría
+                ExposedDropdownMenuBox(
+                    expanded = catMenuExpanded,
+                    onExpandedChange = { catMenuExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCatNombre,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Categoría") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = catMenuExpanded) },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = catMenuExpanded,
+                        onDismissRequest = { catMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sin categoría") },
+                            onClick = { selectedCatId = null; catMenuExpanded = false }
+                        )
+                        categorias.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat.nombre) },
+                                onClick = { selectedCatId = cat.id; catMenuExpanded = false }
+                            )
+                        }
+                    }
+                }
+
+                // Selector de frecuencia
+                Column {
+                    Text(
+                        "Frecuencia",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("SEMANAL" to "Semanal", "QUINCENAL" to "Quincenal", "MENSUAL" to "Mensual")
+                            .forEach { (value, label) ->
+                                FilterChip(
+                                    selected = frecuencia == value,
+                                    onClick = { frecuencia = value },
+                                    label = { Text(label) }
+                                )
+                            }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = fecha,
+                    onValueChange = { fecha = it },
+                    label = { Text("Próximo cobro (AAAA-MM-DD)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cobro automático", modifier = Modifier.weight(1f))
+                    Switch(checked = esAutomatica, onCheckedChange = { esAutomatica = it })
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Activar recordatorio", modifier = Modifier.weight(1f))
+                    Switch(checked = activarRecordatorio, onCheckedChange = { activarRecordatorio = it })
+                }
+
+                if (activarRecordatorio) {
+                    OutlinedTextField(
+                        value = diasAviso,
+                        onValueChange = { if (it.isEmpty() || it.toIntOrNull() != null) diasAviso = it },
+                        label = { Text("Días de aviso antes del cobro") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     if (nombre.isNotBlank()) {
-                        onConfirm(nombre, monto.toDoubleOrNull() ?: 0.0, selectedCatId)
+                        onConfirm(
+                            nombre,
+                            monto.toDoubleOrNull() ?: 0.0,
+                            selectedCatId,
+                            frecuencia,
+                            fecha,
+                            esAutomatica,
+                            activarRecordatorio,
+                            diasAviso.toIntOrNull() ?: 1
+                        )
                     }
                 },
                 enabled = nombre.isNotBlank(),
