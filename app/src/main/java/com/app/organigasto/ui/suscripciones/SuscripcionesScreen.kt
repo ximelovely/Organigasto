@@ -29,14 +29,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
     val suscripciones by viewModel.suscripciones.collectAsState()
+    val suscripcionesPausadas by viewModel.suscripcionesPausadas.collectAsState()
     val categorias by viewModel.categorias.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingSuscripcion by remember { mutableStateOf<Suscripcion?>(null) }
+    var mostrarPausadas by remember { mutableStateOf(false) }
 
     val catMap = remember(categorias) { categorias.associateBy { it.id } }
 
@@ -85,16 +90,47 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
                 }
 
                 item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
+                            .padding(3.dp)
+                    ) {
+                        listOf(false to "Activas", true to "Pausadas (${suscripcionesPausadas.size})")
+                            .forEach { (esPausadas, label) ->
+                                val seleccionado = mostrarPausadas == esPausadas
+                                Text(
+                                    label,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (seleccionado) MaterialTheme.colorScheme.onSurface
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (seleccionado) MaterialTheme.colorScheme.surface else Color.Transparent)
+                                        .clickable { mostrarPausadas = esPausadas }
+                                        .padding(vertical = 6.dp)
+                                )
+                            }
+                    }
+                }
+
+                item {
                     Text(
-                        "Pagos Recurrentes Activos",
+                        if (mostrarPausadas) "Pagos Pausados" else "Pagos Recurrentes Activos",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 17.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 12.dp)
                     )
                 }
 
-                if (suscripciones.isEmpty()) {
+                val listaActual = if (mostrarPausadas) suscripcionesPausadas else suscripciones
+
+                if (listaActual.isEmpty()) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -127,7 +163,7 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
                         }
                     }
                 } else {
-                    items(suscripciones) { suscripcion ->
+                    items(listaActual) { suscripcion ->
                         val cat = suscripcion.categoriaId?.let { catMap[it] }
                         SuscripcionItem(
                             suscripcion = suscripcion,
@@ -135,7 +171,9 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
                             categoriaIconoNombre = cat?.iconoNombre,
                             categoriaIconoUri = cat?.iconoUri,
                             onDelete = { viewModel.eliminarSuscripcion(suscripcion.id) },
-                            onEdit = { editingSuscripcion = suscripcion }
+                            onEdit = { editingSuscripcion = suscripcion },
+                            onTogglePausa = { viewModel.togglePausaSuscripcion(suscripcion) },
+                            estaPausada = mostrarPausadas
                         )
                     }
                 }
@@ -227,7 +265,9 @@ fun SuscripcionItem(
     categoriaIconoNombre: String?,
     categoriaIconoUri: String?,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onTogglePausa: () -> Unit,
+    estaPausada: Boolean = false
 ) {
     val itemColor = parseCategoryColor(categoriaColorHex, PurpuraPrimario)
 
@@ -279,6 +319,17 @@ fun SuscripcionItem(
                     fontSize = 18.sp
                 )
                 Row {
+                    IconButton(
+                        onClick = onTogglePausa,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            if (estaPausada) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = if (estaPausada) "Reactivar" else "Pausar",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                     IconButton(
                         onClick = onEdit,
                         modifier = Modifier.size(28.dp)

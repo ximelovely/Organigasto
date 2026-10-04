@@ -82,6 +82,21 @@ class MovimientosViewModel(
         .observarPorUsuario(currentUserId, "ACTIVA")
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val suscripcionesPausadas: StateFlow<List<Suscripcion>> = suscripcionDao
+        .observarPorUsuario(currentUserId, "PAUSADA")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun togglePausaSuscripcion(suscripcion: Suscripcion) {
+        viewModelScope.launch {
+            try {
+                val nuevoEstado = if (suscripcion.estado == "ACTIVA") "PAUSADA" else "ACTIVA"
+                suscripcionDao.actualizar(suscripcion.copy(estado = nuevoEstado))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     val prestamos: StateFlow<List<Prestamo>> = prestamoDao
         .observarPorUsuario(currentUserId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
