@@ -84,7 +84,7 @@ fun SuscripcionesScreen(viewModel: MovimientosViewModel) {
 
                 item {
                     TotalSuscripcionesCard(
-                        total = suscripciones.sumOf { it.costo },
+                        total = suscripciones.sumOf { if (it.frecuencia == "ANUAL") it.costo / 12 else it.costo },
                         count = suscripciones.size
                     )
                 }
@@ -408,7 +408,7 @@ fun AddSuscripcionDialog(
                 OutlinedTextField(
                     value = monto,
                     onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) monto = it },
-                    label = { Text("Costo mensual") },
+                    label = { Text("Costo por cobro") },
                     prefix = { Text("$ ") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
@@ -460,7 +460,7 @@ fun AddSuscripcionDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.horizontalScroll(rememberScrollState())
                     ) {
-                        listOf("SEMANAL" to "Semanal", "QUINCENAL" to "Quincenal", "MENSUAL" to "Mensual")
+                        listOf("MENSUAL" to "Mensual", "ANUAL" to "Anual")
                             .forEach { (value, label) ->
                                 FilterChip(
                                     selected = frecuencia == value,
@@ -585,7 +585,7 @@ fun EditSuscripcionDialog(
     var selectedCatId by remember { mutableStateOf(suscripcion.categoriaId) }
     var catMenuExpanded by remember { mutableStateOf(false) }
 
-    var frecuencia by remember { mutableStateOf(suscripcion.frecuencia) }
+    var frecuencia by remember { mutableStateOf(if (suscripcion.frecuencia == "ANUAL") "ANUAL" else "MENSUAL") }
 
     var fecha by remember { mutableStateOf(suscripcion.fechaProximoCobro) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -622,7 +622,7 @@ fun EditSuscripcionDialog(
                 OutlinedTextField(
                     value = monto,
                     onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) monto = it },
-                    label = { Text("Costo mensual") },
+                    label = { Text("Costo por cobro") },
                     prefix = { Text("$ ") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
@@ -672,7 +672,7 @@ fun EditSuscripcionDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.horizontalScroll(rememberScrollState())
                     ) {
-                        listOf("SEMANAL" to "Semanal", "QUINCENAL" to "Quincenal", "MENSUAL" to "Mensual")
+                        listOf("MENSUAL" to "Mensual", "ANUAL" to "Anual")
                             .forEach { (value, label) ->
                                 FilterChip(
                                     selected = frecuencia == value,
