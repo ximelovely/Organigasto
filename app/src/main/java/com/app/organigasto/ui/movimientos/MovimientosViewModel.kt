@@ -82,6 +82,21 @@ class MovimientosViewModel(
         .observarPorUsuario(currentUserId, "ACTIVA")
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val suscripcionesPausadas: StateFlow<List<Suscripcion>> = suscripcionDao
+        .observarPorUsuario(currentUserId, "PAUSADA")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun togglePausaSuscripcion(suscripcion: Suscripcion) {
+        viewModelScope.launch {
+            try {
+                val nuevoEstado = if (suscripcion.estado == "ACTIVA") "PAUSADA" else "ACTIVA"
+                suscripcionDao.actualizar(suscripcion.copy(estado = nuevoEstado))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     val prestamos: StateFlow<List<Prestamo>> = prestamoDao
         .observarPorUsuario(currentUserId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -580,23 +595,31 @@ class MovimientosViewModel(
         }
     }
 
-    fun agregarSuscripcion(nombre: String, costo: Double, frecuencia: String = "MENSUAL") {
+    fun agregarSuscripcion(
+        nombre: String,
+        costo: Double,
+        categoriaId: Int? = null,
+        frecuencia: String = "MENSUAL",
+        fechaProximoCobro: String = LocalDate.now().toString(),
+        esAutomatica: Boolean = true,
+        activarRecordatorio: Boolean = true,
+        diasAviso: Int = 1
+    ) {
         viewModelScope.launch {
             try {
                 ensureUserExists()
-                val hoy = LocalDate.now().toString()
                 suscripcionDao.insertar(
                     Suscripcion(
                         usuarioId = currentUserId,
-                        categoriaId = null,
+                        categoriaId = categoriaId,
                         nombre = nombre,
                         costo = costo,
-                        fechaProximoCobro = hoy,
-                        esAutomatica = true,
+                        fechaProximoCobro = fechaProximoCobro,
+                        esAutomatica = esAutomatica,
                         frecuencia = frecuencia,
                         estado = "ACTIVA",
-                        activarRecordatorio = true,
-                        diasAviso = 1
+                        activarRecordatorio = activarRecordatorio,
+                        diasAviso = diasAviso
                     )
                 )
             } catch (e: Exception) {
@@ -611,6 +634,16 @@ class MovimientosViewModel(
                 suscripcionDao.obtenerPorId(id)?.let {
                     suscripcionDao.eliminar(it)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun actualizarSuscripcion(suscripcion: Suscripcion) {
+        viewModelScope.launch {
+            try {
+                suscripcionDao.actualizar(suscripcion)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
